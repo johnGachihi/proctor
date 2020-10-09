@@ -1,0 +1,10 @@
+$mdc-theme-primary: #000;
+$mdc-theme-secondary: #d1c4e9;
+$mdc-theme-background: #fff;
+
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans&display=swap');
+$mdc-typography-font-family: unquote("Open Sans, sans-serif");
+
+@import "@material/react-typography/index.scss";
+@import "@material/react-text-field/index.scss";
+@import "@material/react-button/index.scss";
