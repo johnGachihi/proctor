@@ -1,6 +1,8 @@
 import client from '../client'
 import moxios from 'moxios'
 
+const url = 'http://example.com'
+
 describe('Test API client function', () => {
   beforeEach(() => {
     // @ts-ignore
@@ -13,32 +15,32 @@ describe('Test API client function', () => {
   })
 
   it('Returns `data` subset of axios response', (done) => {
-    moxios.stubRequest('http://example.com', {
+    moxios.stubRequest(url, {
       response: { data: 'foo' }
     })
 
-    client.get('http://example.com').then(res => {
+    client.get(url).then(res => {
       expect(res.data).toBe('foo')
       done()
     })
   })
 
   it('Throws error with `{ unauthenticated: true }` when status is 401', done => {
-    moxios.stubFailure('post', 'http://example.com', { status: 401 })
+    moxios.stubFailure('post', url, { status: 401 })
 
-    client.post('http://example.com').catch(res => {
+    client.post(url).catch(res => {
       expect(res).toEqual({unauthenticated: true});
       done();
     })
   })
 
   it('Puts validation errors in err.fields when status is 422', done => {
-    moxios.stubFailure('post', 'http://example.com', {
+    moxios.stubFailure('post', url, {
       status: 422,
       response: { errors: { email: ['Invalid email'] }}
     });
 
-    client.post('http://example.com').catch(res => {
+    client.post(url).catch(res => {
       expect(res).toMatchObject({
         fields: { email: ['Invalid email'] }
       })
