@@ -1,16 +1,16 @@
-import { Button } from "@material/react-button";
 import React from "react";
 import { useAuth } from "./contexts/auth-context";
+import CandidateHome from "./screens/candidate/home";
+import ProctorHome from "./screens/proctor/home";
 
 function AuthenticatedApp() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
-  return (
-    <div>
-      Welcome, {user.name}
-      <Button onClick={ logout } raised>Logout</Button>
-    </div>
-  );
+  if (user.role === 'proctor') {
+    return <ProctorHome />
+  } else {
+    return  <CandidateHome />
+  }
 }
 
 export default AuthenticatedApp;

@@ -13,7 +13,7 @@ function FullPageSpinner() {
       justifyContent: 'center',
       alignItems: 'center',
     }}>
-      <BarLoader loading/>
+      <BarLoader aria-label={'loading'} loading/>
     </div>
   )
 }

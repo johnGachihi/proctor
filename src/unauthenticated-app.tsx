@@ -4,7 +4,7 @@ import { Button } from "@material/react-button";
 import TextField, { Input } from "@material/react-text-field";
 import { Caption, Headline5 } from "@material/react-typography";
 import styled from "@emotion/styled";
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useAuth } from "./contexts/auth-context";
 import useAsync from "./utils/use-async";
 
@@ -44,23 +44,28 @@ function UnauthenticatedApp() {
       >
         <FormGroup>
           <TextField label="Username">
-            <Input value={username} onChange={handleUsernameChange} />
+            <Input 
+              id='username'
+              value={username}
+              onChange={handleUsernameChange}
+            />
           </TextField>
           {usernameError.map((error, idx) => (
-            <ErrorMessage key={idx}>{error}</ErrorMessage>
+            <ErrorMessage key={idx} role='alert'>{error}</ErrorMessage>
           ))}
         </FormGroup>
 
         <FormGroup>
           <TextField label="Password">
             <Input
+              id='password'
               value={password}
               type="password"
               onChange={handlePasswordChange}
             />
           </TextField>
           {passwordError.map((error, idx) => (
-            <ErrorMessage key={idx}>{error}</ErrorMessage>
+            <ErrorMessage key={idx} role='alert'>{error}</ErrorMessage>
           ))}
         </FormGroup>
 
@@ -70,21 +75,14 @@ function UnauthenticatedApp() {
   );
 }
 
-/* TODO: 'username' to 'email' */
+
 const useForm = () => {
   const [username, setUsername] = useState("");
   const [usernameError, setUsernameError] = useState([]);
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState([]);
-  const { run, isError, error } = useAsync();
+  const { run } = useAsync();
   const { login } = useAuth();
-
-  useEffect(() => {
-    if (isError && error.fields) {
-      setUsernameError(error.fields.email ?? []);
-      setPasswordError(error.fields.password ?? []);
-    }
-  }, [isError, error]);
 
   const handleUsernameChange = (e: FormEvent<HTMLInputElement>) => {
     setUsername(e.currentTarget.value);
@@ -93,11 +91,17 @@ const useForm = () => {
     setPassword(e.currentTarget.value);
   };
 
-  const handleSubmit = () => {
-    run(login({ email: username, password }));
+  const handleSubmit = async () => {
+    try {
+      await run(login({ email: username, password }));
+    } catch (error) {
+      if (error.fields) {
+        setUsernameError(error.fields.email ?? []);
+        setPasswordError(error.fields.password ?? []);
+      }
+    }
   };
 
-  /* TODO: on*** or handle*** */
   return {
     username,
     usernameError,
