@@ -1,16 +1,18 @@
 import React from "react";
+import { FullPageSpinner } from "./components/lib";
 import { useAuth } from "./contexts/auth-context";
-import CandidateHome from "./screens/candidate/home";
-import ProctorHome from "./screens/proctor/home";
+
+const ProctorApp = React.lazy(() => import('./proctor/proctor-app'))
+const CandidateApp = React.lazy(() => import('./candidate/candidate-app'))
 
 function AuthenticatedApp() {
   const { user } = useAuth();
 
-  if (user.role === 'proctor') {
-    return <ProctorHome />
-  } else {
-    return  <CandidateHome />
-  }
+  return (
+    <React.Suspense fallback={<FullPageSpinner/>}>
+      {user.role === 'proctor' ? <ProctorApp /> : <CandidateApp />}
+    </React.Suspense>
+  )
 }
 
 export default AuthenticatedApp;

@@ -8,7 +8,7 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import Alert, { useAlert } from "../../components/alert";
 import client from "../../network/client";
 import useAsync from "../../utils/use-async";
-import NavbarPageTemplate from "../templates/navbar-page";
+import NavbarPageTemplate from "../../screens/templates/navbar-page";
 
 function ProctorHome() {
   const [examCode, setExamCode] = useState("");
