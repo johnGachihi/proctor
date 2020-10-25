@@ -17,11 +17,8 @@ function ExamRoom() {
 
   useEffect(() => {
     async function sendOffer() {
-      const configuration = { iceServers: servers };
-      const peerConnection = new RTCPeerConnection(configuration)
-      const offer = await peerConnection.createOffer({
-        offerToReceiveVideo: true
-      })
+      const peerConnection = new RTCPeerConnection(webrtc.configuration)
+      const offer = await peerConnection.createOffer(offerOptions)
       setPeerConnectionOffer(offer)
       await run(client.post('/signalling/offer', {offer: offer, exam_code: code}))
     }
@@ -31,34 +28,21 @@ function ExamRoom() {
   useEffect(() => {
     listen('PeerConnectionAnswer', async (answer: any) => {
       if (answer.answer) {
-        const configuration = {iceServers: servers};
-        const peerConnection = new RTCPeerConnection(configuration);
+        const peerConnection = new RTCPeerConnection(webrtc.configuration);
 
-        peerConnection.onicecandidate = async (event) => {
-          webrtc.handleIceCandidateIdentified(event, answer.senderId)
-        }
-        peerConnection.onconnectionstatechange = (event) => {
-          console.log('Connection state changed', peerConnection.connectionState)
-        }
-        peerConnection.oniceconnectionstatechange = (event) => {
-          console.log('ICE connection state changed:',
-                      peerConnection.iceConnectionState,
-                      peerConnection.connectionState)
-        }
+        webrtc.setupEventListeners(peerConnection, answer.senderId)
 
-        await peerConnection.createOffer({
-          offerToReceiveVideo: true
-        })
-        await peerConnection.setLocalDescription(new RTCSessionDescription(peerConnectionOffer))
-        answer.answer.sdp += '\n'
-        await peerConnection.setRemoteDescription(
-          new RTCSessionDescription(answer.answer))
+        // Offer ignored intentionally
+        // Called to avoid `setLocalDescription called before createOffer` error
+        await peerConnection.createOffer(offerOptions)
+
+        await peerConnection.setLocalDescription(peerConnectionOffer)
+        await peerConnection.setRemoteDescription(answer.answer)
         
         setPeerConnections(peerConnections => [
           ...peerConnections,
           { id: answer.senderId, peerConnection }
         ])
-
       }
     })
 
@@ -72,8 +56,6 @@ function ExamRoom() {
     return () => stopListening('PeerConnectionICE')
   }, [listen, peerConnections, stopListening])
 
-  useEffect(() => {console.log(peerConnections)}, [peerConnections])
-
   return (
     <div>
       <span>Exam Room</span>
@@ -82,15 +64,8 @@ function ExamRoom() {
   )
 }
 
-const servers: RTCIceServer[] = [
-  {
-    urls: 'turn:numb.viagenie.ca',
-    username: 'webrtc@live.com',
-    credential: 'muazkh'
-  },
-  {
-    urls: 'stun:stun.l.google.com:19302'
-  }
-]
+const offerOptions: RTCOfferOptions = {
+  offerToReceiveVideo: true
+}
 
 export default ExamRoom

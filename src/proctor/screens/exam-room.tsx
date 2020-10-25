@@ -23,25 +23,11 @@ function ExamRoom() {
     listen("PeerConnectionOffer", async (offer: any) => {
       console.log('PeerConnectionOffer', offer)
       if (offer.offer && offer.senderId) {
-        const configuration = { iceServers: servers };
-        const peerConnection = new RTCPeerConnection(configuration);
+        const peerConnection = new RTCPeerConnection(webrtc.configuration);
 
-        peerConnection.onicecandidate = (event) => {
-          webrtc.handleIceCandidateIdentified(event, offer.senderId)
-        }
-        peerConnection.onconnectionstatechange = () => {
-          console.log('Connection state changed', peerConnection.connectionState)
-        }
-        peerConnection.oniceconnectionstatechange = () => {
-          console.log('ICE connection state changed:',
-                      peerConnection.iceConnectionState,
-                      peerConnection.connectionState)
-        }
+        webrtc.setupEventListeners(peerConnection, offer.senderId)
 
-        offer.offer.sdp += '\n'
-        peerConnection.setRemoteDescription(
-          new RTCSessionDescription(offer.offer)
-        );
+        await peerConnection.setRemoteDescription(offer.offer);
 
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
@@ -75,15 +61,5 @@ function ExamRoom() {
   );
 }
 
-const servers: RTCIceServer[] = [
-  {
-    urls: 'turn:numb.viagenie.ca',
-    username: 'webrtc@live.com',
-    credential: 'muazkh'
-  },
-  {
-    urls: 'stun:stun.l.google.com:19302'
-  }
-]
 
 export default ExamRoom;

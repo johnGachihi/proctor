@@ -27,6 +27,7 @@ function fixIceCandidate(ice: any) {
   }
 }
 
+
 async function handleIceCandidateIdentified(
   event: RTCPeerConnectionIceEvent,
   recipientId: number
@@ -45,4 +46,34 @@ async function handleIceCandidateIdentified(
   }
 }
 
-export { handleIceCandidateReceived, handleIceCandidateIdentified }
+
+function setupEventListeners(peerConnection: RTCPeerConnection, connectionId: number) {
+  peerConnection.onicecandidate = async (event) => {
+    handleIceCandidateIdentified(event, connectionId)
+  }
+  peerConnection.onconnectionstatechange = () => {
+    console.log('Connection state changed', peerConnection.connectionState)
+  }
+  peerConnection.oniceconnectionstatechange = () => {
+    console.log('ICE connection state changed:', peerConnection.iceConnectionState)
+  }
+}
+
+const configuration: RTCConfiguration = {
+  iceServers: [
+    {
+      urls: 'turn:numb.viagenie.ca',
+      username: 'webrtc@live.com',
+      credential: 'muazkh'
+    },
+    {
+      urls: 'stun:stun.l.google.com:19302'
+    }
+  ]
+}
+
+export {
+  handleIceCandidateReceived,
+  setupEventListeners,
+  configuration
+}
