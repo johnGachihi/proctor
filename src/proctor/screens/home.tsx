@@ -9,15 +9,28 @@ import Alert, { useAlert } from "../../components/alert";
 import client from "../../network/client";
 import useAsync from "../../utils/use-async";
 import NavbarPageTemplate from "../../screens/templates/navbar-page";
+import { useHistory } from "react-router-dom";
+import { ErrorMessage } from "../../components/lib";
 
 function ProctorHome() {
   const [examCode, setExamCode] = useState("");
+  const [examCodeErrors, setExamCodeErrors] = useState<string[]>([])
   const { run, isLoading, isSuccess, isError, error, data } = useAsync();
   const { showAlert, alertState, closeAlert } = useAlert();
+  const history = useHistory();
 
   const handleStartExamSessionClick = useCallback(() => {
-    run(client('exam-session'));
+    run(client.post('exam-session'));
   }, [run]);
+
+  async function handleClickJoin() {
+    try {
+      await run(client("check_code", { params: { code: examCode } }));
+      history.push(`exam/${examCode}`);
+    } catch (error) {
+      setExamCodeErrors(error.fields?.code ?? [])
+    }
+  }
 
   useEffect(() => {
     if (isError) {
@@ -80,7 +93,13 @@ function ProctorHome() {
                 ></Input>
               </TextField>
 
-              <Button disabled={examCode === ""}>Join</Button>
+              {examCodeErrors.map((error, key) => 
+                (<ErrorMessage key={key} children={error} css={{alignSelf: 'start'}}/>))}
+
+              <Button
+                disabled={examCode === ""}
+                onClick={handleClickJoin}
+              >Join</Button>
             </div>
           </div>
         ) : (
@@ -96,7 +115,11 @@ function ProctorHome() {
               <Body1 css={{marginRight: '15px'}}>Exam session code:</Body1>
               <Body1 css={{fontSize: '30px'}}>{data.code}</Body1>
             </div>
-            <Button raised>Join session</Button>
+            <Button raised onClick={() => {
+              history.push(`/exam/${data.code}`)
+            }}>
+              Join session
+            </Button>
           </div>
         )}
       </div>

@@ -6,8 +6,8 @@ import ProctorHome from "./screens/home";
 function ProctorApp() {
   return (
     <Switch>
+      <Route path="/exam/:code" children={<ExamRoom />} />
       <Route path="/" children={<ProctorHome />} />
-      <Route path="/exam" children={<ExamRoom />} />
     </Switch>
   );
 }
