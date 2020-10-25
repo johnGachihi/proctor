@@ -1,5 +1,7 @@
 /** @jsx jsx */
 import { jsx } from '@emotion/core'
+import styled from '@emotion/styled';
+import { Caption } from '@material/react-typography';
 
 import BarLoader from 'react-spinners/BarLoader';
 
@@ -41,4 +43,11 @@ function FullPageErrorFallback({error}: Error) {
   )
 }
 
-export {FullPageSpinner, FullPageErrorFallback}
+
+const ErrorMessage = styled(Caption)`
+  color: red;
+  margin-left: 7px;
+`;
+
+
+export {FullPageSpinner, FullPageErrorFallback, ErrorMessage}

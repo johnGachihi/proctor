@@ -2,11 +2,12 @@
 import { jsx } from "@emotion/core";
 import { Button } from "@material/react-button";
 import TextField, { Input } from "@material/react-text-field";
-import { Caption, Headline5 } from "@material/react-typography";
+import { Headline5 } from "@material/react-typography";
 import styled from "@emotion/styled";
 import { FormEvent, useState } from "react";
 import { useAuth } from "./contexts/auth-context";
 import useAsync from "./utils/use-async";
+import { ErrorMessage } from "./components/lib";
 
 function UnauthenticatedApp() {
   const {
@@ -117,11 +118,6 @@ const FormGroup = styled.div`
   margin-bottom: 20px;
   display: flex;
   flex-direction: column;
-`;
-
-const ErrorMessage = styled(Caption)`
-  color: red;
-  margin-left: 7px;
 `;
 
 export default UnauthenticatedApp;
