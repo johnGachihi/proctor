@@ -56,7 +56,12 @@ function setupEventListeners(peerConnection: RTCPeerConnection, connectionId: nu
   }
   peerConnection.oniceconnectionstatechange = () => {
     console.log('ICE connection state changed:', peerConnection.iceConnectionState)
+    peerConnection.onicecandidate = null
   }
+}
+
+function fixOfferOrAnswer(offerOrAnswer: any) {
+  offerOrAnswer.sdp += '\n'
 }
 
 const configuration: RTCConfiguration = {
@@ -75,5 +80,6 @@ const configuration: RTCConfiguration = {
 export {
   handleIceCandidateReceived,
   setupEventListeners,
-  configuration
+  configuration,
+  fixOfferOrAnswer,
 }

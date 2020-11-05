@@ -5,6 +5,6 @@ export type LoginCredentials = {
 
 export type AuthProviderValue = {
   user: any,
-  login: (credentials: LoginCredentials) => void;
+  login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void
 }

@@ -1,6 +1,6 @@
 /** @jsx jsx */
 import { jsx } from "@emotion/core";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/auth-context";
 import client from "../../network/client";
@@ -18,15 +18,30 @@ function ExamRoom() {
   const { code } = useParams()
   const proctorsChannel = useMemo(() => `proctors.${code}`, [code])
   const { listen, stopListening } = useEchoPresence(proctorsChannel)
+  const videoEl = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
     listen("PeerConnectionOffer", async (offer: any) => {
       console.log('PeerConnectionOffer', offer)
       if (offer.offer && offer.senderId) {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+        
         const peerConnection = new RTCPeerConnection(webrtc.configuration);
+        stream?.getTracks().forEach(track => peerConnection.addTrack(track, stream))
 
         webrtc.setupEventListeners(peerConnection, offer.senderId)
+        peerConnection.ontrack = (event: RTCTrackEvent) => {
+          alert('Track')
+          console.log('TRACK!!!', event)
+          // const remoteStream = new MediaStream()
+          if (videoEl.current) {
+            // event.track.muted = false
+            // remoteStream.addTrack(event.track)
+            videoEl.current.srcObject = event.streams[0]
+          }
+        }
 
+        webrtc.fixOfferOrAnswer(offer.offer)
         await peerConnection.setRemoteDescription(offer.offer);
 
         const answer = await peerConnection.createAnswer();
@@ -57,6 +72,14 @@ function ExamRoom() {
     <div>
       Invigilate
       <button onClick={logout}>Logout</button>
+      <video
+        autoPlay
+        ref={videoEl}
+        css={{
+          width: "250px",
+          height: "auto",
+        }}
+      ></video>
     </div>
   );
 }
