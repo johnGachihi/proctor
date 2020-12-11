@@ -1,8 +1,8 @@
 import client from "../network/client";
 
 async function handleIceCandidateReceived(iceMessage: any, peerConnections: PeerConnection[]) {
-  console.log('Ice candidate received')
-  const pc = getRTCPeerConnection(iceMessage.sender_id, peerConnections)
+  console.log('Ice candidate received__')
+  const pc = getRTCPeerConnection(iceMessage.senderId, peerConnections)
   if (pc) {
     const { peerConnection } = pc
     fixIceCandidate(iceMessage.ice)
@@ -14,6 +14,8 @@ async function handleIceCandidateReceived(iceMessage: any, peerConnections: Peer
       console.error('Error adding received ice candidate', e);
       console.error('Ice:', iceMessage.ice)
     }
+  } else {
+    console.log('PeerConnection not found', peerConnections)
   }
 }
 

@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/auth-context'
 import client from '../../network/client'
 import useAsync from '../../utils/use-async'
-import { useEchoPrivate } from '../../hooks/use-echo'
+import { useEchoPresence } from '../../hooks/use-echo'
 import * as webrtc from '../../utils/webrtc'
 
 /* webcamStream should never be undefined */
@@ -13,72 +13,104 @@ type Props = PropsWithChildren<{
 
 function ExamRoom({ webcamStream }: Props) {
   const { user, logout } = useAuth()
+  //@ts-ignore
   const { code } = useParams()
   const { run } = useAsync()
-  const channel = useMemo(() => `candidate.${user.id}`, [user.id])
-  const { listen, stopListening } = useEchoPrivate(channel)
+
   const [peerConnections, setPeerConnections] = useState<PeerConnection[]>([])
-  const [peerConnectionOffer, setPeerConnectionOffer] = useState<any>()
-  const [tempPeerConnection, setTempPeerConnection] = useState<RTCPeerConnection>()
+
+  const channel = useMemo(() => `exam.${code}`, [code])
+  const { listen, stopListening, onJoining } = useEchoPresence(channel)
+
   const videoEl = useRef<HTMLVideoElement>(null)
 
+  useEffect(() => {
+    if (videoEl && webcamStream) {
+      videoEl.current!.srcObject = webcamStream
+    }
+  }, [videoEl, webcamStream])
 
   useEffect(() => {
-    async function sendOffer() {
-      const peerConnection = new RTCPeerConnection(webrtc.configuration)
-      webcamStream?.getTracks().forEach(track => peerConnection.addTrack(track, webcamStream))
-      const offer = await peerConnection.createOffer(offerOptions)
-      peerConnection.setLocalDescription(offer)
-      setTempPeerConnection(peerConnection)
-      setPeerConnectionOffer(offer)
-      await run(client.post('/signalling/offer', {offer: offer, exam_code: code}))
-    }
-    sendOffer()
-  }, [code, run, webcamStream])
+    onJoining(async user => {
+      if (user.role === 'proctor') {
+        // const stream = await navigator.mediaDevices.getUserMedia({ video: true })
+        const peerConnection = new RTCPeerConnection(webrtc.configuration)
+
+        webcamStream?.getTracks().forEach(track => peerConnection.addTrack(track, webcamStream))
+
+        const offer = await peerConnection.createOffer(offerOptions)
+        await peerConnection.setLocalDescription(offer)
+
+        peerConnection.onicecandidate = async (event) => {
+          if (event.candidate) {
+            try {
+              await client.post('signalling/ice-candidate', {
+                exam_code: code,
+                recipient_id: user.id,
+                ice: event.candidate
+              })
+            } catch (error) {
+              console.error('Error sending ice-candidate:', error)
+            }
+          } else {
+            console.log("Ice gathering complete")
+          }
+        }
+        peerConnection.onconnectionstatechange = () => {
+          console.log('Connection state changed', peerConnection.connectionState)
+        }
+        peerConnection.oniceconnectionstatechange = () => {
+          console.log('ICE connection state changed:', peerConnection.iceConnectionState)
+          peerConnection.onicecandidate = null
+        }
+
+        setPeerConnections(peerConnections => [
+          ...peerConnections,
+          { id: user.id, peerConnection }
+        ])
+
+        await run(client.post('signalling/offer', {
+          exam_code: code,
+          recipient_id: user.id,
+          offer
+        }))
+      }
+    })
+  }, [onJoining, run, code, peerConnections])
 
   useEffect(() => {
     listen('PeerConnectionAnswer', async (answer: any) => {
-      if (answer.answer) {
-        const peerConnection = tempPeerConnection
+      const connection = peerConnections.find(pc => pc.id === answer.senderId)
+
+      if (connection) {
+        const peerConnection = connection.peerConnection
+
+        webrtc.fixOfferOrAnswer(answer.answer)
+        await peerConnection.setRemoteDescription(answer.answer)
+      }
+
+      /* if (answer.answer) {
         if (peerConnection) {
           webrtc.setupEventListeners(peerConnection, answer.senderId)
           peerConnection.ontrack = (e) => {
-            console.log("TRACK!!!", e)
-            if (videoEl.current) {
-              videoEl.current.srcObject = e.streams[0]
-            }
+            ...
           }
-          /* peerConnection.oniceconnectionstatechange = (e: Event) => {
-            if (peerConnection.iceConnectionState === 'connected') {
-              console.log('ICE connection state changed:', peerConnection.iceConnectionState)
-              webcamStream?.getTracks().forEach(track => peerConnection.addTrack(track, webcamStream))
-            }
-          } */
-  
-          // Offer ignored intentionally
-          // Called to avoid `setLocalDescription called before createOffer` error
-          // await peerConnection.createOffer(offerOptions)
-  
-          // await peerConnection.setLocalDescription(peerConnectionOffer)
-          await peerConnection.setRemoteDescription(answer.answer)
-          
-          setPeerConnections(peerConnections => [
-            ...peerConnections,
-            { id: answer.senderId, peerConnection }
-          ])
         }
-      }
+      } */
     })
 
     return () => stopListening('PeerConnectionAnswer')
-  }, [listen, stopListening, peerConnectionOffer, webcamStream, tempPeerConnection])
+  }, [listen, peerConnections, stopListening])
 
   useEffect(() => {
     listen('PeerConnectionICE', async (iceMessage) => {
-      webrtc.handleIceCandidateReceived(iceMessage, peerConnections)
+      console.log('iceMessage', iceMessage)
+      if (iceMessage.recipientId === user.id) {
+        webrtc.handleIceCandidateReceived(iceMessage, peerConnections)
+      }
     })
     return () => stopListening('PeerConnectionICE')
-  }, [listen, peerConnections, stopListening])
+  }, [listen, peerConnections, stopListening, user.id])
 
   return (
     <div>
