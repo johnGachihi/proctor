@@ -24,6 +24,17 @@ function ExamRoom() {
   }, [onJoining])
 
   useEffect(() => {
+    const videl = videoEl.current
+    console.log(videoEl!.current!.srcObject)
+    /* return () => {
+      if (videl) {
+        videl.srcObject = null
+        console.log('srcObject cleared')
+      }
+    } */
+  })
+
+  useEffect(() => {
     listen("PeerConnectionOffer", async (offer: any) => {
       console.log('PeerConnectionOffer', offer)
 
@@ -59,18 +70,15 @@ function ExamRoom() {
         peerConnection.onicecandidate = null
       }
       
-
-      LEFT OFF HERE
       const remoteStream = new MediaStream();
       videoEl.current!.srcObject = remoteStream;
 
       peerConnection.ontrack = (event: RTCTrackEvent) => {
         if (videoEl.current) {
+          console.log(event.track)
           remoteStream.addTrack(event.track);
         }
       }
-
-
 
       webrtc.fixOfferOrAnswer(offer.offer)
       await peerConnection.setRemoteDescription(offer.offer);

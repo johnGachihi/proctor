@@ -9,7 +9,7 @@ function CandidateApp() {
   return (
     <Switch>
       <Route exact path="/exam/:code">
-        <ExamRoom webcamStream={webcamStream} />
+        <ExamRoom webcamStream={webcamStream!} />
       </Route>
       <Route exact path="/">
         <CandidateHome setWebcamStream={setWebcamStream}/>

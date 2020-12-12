@@ -1,4 +1,4 @@
-import { Channel, PresenceChannel, PusherPresenceChannel } from "laravel-echo/dist/channel";
+import { Channel, PresenceChannel } from "laravel-echo/dist/channel";
 import { useCallback, useEffect, useState } from "react";
 import EchoClient from '../network/echo-client'
 
@@ -24,11 +24,16 @@ function useEchoPresence(channelName: string) {
   const onJoining = useCallback((callback: (user: User) => void) => {
     if (channel) {
       channel.joining(callback)
-      console.log(channel)
     }
   }, [channel])
 
-  return {listen, stopListening, subscribers, onJoining}
+  const onLeaving = useCallback((callback: (user: User) => void) => {
+    if (channel) {
+      channel.leaving(callback)
+    }
+  }, [channel])
+
+  return {listen, stopListening, subscribers, onJoining, onLeaving}
 }
 
 function useEchoPrivate(channel: string) {
