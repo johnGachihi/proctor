@@ -33,7 +33,20 @@ function useEchoPresence(channelName: string) {
     }
   }, [channel])
 
-  return {listen, stopListening, subscribers, onJoining, onLeaving}
+  const onLeavingStop = useCallback(() => {
+    if (channel) {
+      channel.stopListening('.pusher:member_removed')
+    }
+  }, [channel])
+
+  return {
+    listen,
+    stopListening,
+    subscribers,
+    onJoining,
+    onLeaving,
+    onLeavingStop
+  }
 }
 
 function useEchoPrivate(channel: string) {
@@ -48,6 +61,7 @@ function useEcho(connect: () => Channel | PresenceChannel, leave: () => void) {
   
   useEffect(() => {
     const channel = connect()
+    console.log('useEcho: Connecting to channel')
     setChannel(channel)
 
     return leave

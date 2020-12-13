@@ -4,7 +4,7 @@ import { Button } from "@material/react-button";
 import MaterialIcon from "@material/react-material-icon";
 import TextField, { Input } from "@material/react-text-field";
 import { Body1 } from "@material/react-typography";
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, PropsWithChildren, useCallback, useEffect, useState } from "react";
 import Alert, { useAlert } from "../../components/alert";
 import client from "../../network/client";
 import useAsync from "../../utils/use-async";
@@ -12,7 +12,11 @@ import NavbarPageTemplate from "../../screens/templates/navbar-page";
 import { useHistory } from "react-router-dom";
 import { ErrorMessage } from "../../components/lib";
 
-function ProctorHome() {
+type Props = PropsWithChildren<{
+  setWebcamStream: (stream: MediaStream) => void
+}>
+
+function ProctorHome({ setWebcamStream }: Props) {
   const [examCode, setExamCode] = useState("");
   const [examCodeErrors, setExamCodeErrors] = useState<string[]>([])
   const { run, isLoading, isSuccess, isError, error, data } = useAsync();
@@ -26,10 +30,22 @@ function ProctorHome() {
   async function handleClickJoin() {
     try {
       await run(client("check_code", { params: { code: examCode } }));
+      await getWebcamStream()
       history.push(`exam/${examCode}`);
     } catch (error) {
       setExamCodeErrors(error.fields?.code ?? [])
+
+      if (error.name === "NotFoundError") {
+        console.log('Please turn on your webcam')
+      } else if (error.name === "NotAllowedError") {
+        console.log('Please grant webcam permissions on your browser')
+      }
     }
+  }
+
+  async function getWebcamStream() {
+    const stream = await run(navigator.mediaDevices.getUserMedia({ video: true }))
+    setWebcamStream(stream)
   }
 
   useEffect(() => {

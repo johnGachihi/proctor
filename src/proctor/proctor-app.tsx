@@ -1,13 +1,19 @@
-import React from "react";
+import React, { useState } from "react";
 import { Switch, Route } from "react-router-dom";
 import ExamRoom from "./screens/exam-room";
 import ProctorHome from "./screens/home";
 
 function ProctorApp() {
+  const [webcamStream, setWebcamStream] = useState<MediaStream>()
+
   return (
     <Switch>
-      <Route path="/exam/:code" children={<ExamRoom />} />
-      <Route path="/" children={<ProctorHome />} />
+      <Route path="/exam/:code">
+        <ExamRoom webcamStream={ webcamStream! }/>
+      </Route>
+      <Route path="/">
+        <ProctorHome setWebcamStream={setWebcamStream}/>
+      </Route>
     </Switch>
   );
 }

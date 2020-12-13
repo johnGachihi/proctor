@@ -3,6 +3,7 @@
 type PeerConnection = {
   id: number;
   peerConnection: RTCPeerConnection;
+  mediaStream?: MediaStream;
 };
 
 type User = {
