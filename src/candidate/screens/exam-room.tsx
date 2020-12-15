@@ -12,16 +12,18 @@ function ExamRoom({ webcamStream }: Props) {
   const { user, logout } = useAuth()
   //@ts-ignore
   const { code } = useParams()
-
+  const { peerConnections } = usePeerConnection(code, webcamStream, user)
   const videoEl = useRef<HTMLVideoElement>(null)
-
-  usePeerConnection(code, webcamStream, user)
 
   useEffect(() => {
     if (videoEl && webcamStream) {
       videoEl.current!.srcObject = webcamStream
     }
   }, [videoEl, webcamStream])
+
+  useEffect(() => {
+    console.log(peerConnections)
+  }, [peerConnections])
 
   return (
     <div>

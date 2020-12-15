@@ -51,6 +51,14 @@ async function sendAnswer(
   })
 }
 
+function getPeerConnectionById(
+  peerConnections: PeerConnection[],
+  id: number
+) {
+  return peerConnections.find(pc => pc.id === id)
+}
+
+
 function usePeerConnection(
   examCode: string,
   mediaStream: MediaStream,
@@ -68,6 +76,51 @@ function usePeerConnection(
     onLeavingStop,
   } = useEchoPresence(channel)
 
+  const handleIceCandidateIdentified = useCallback(async (
+    event: RTCPeerConnectionIceEvent,
+    peerId: number
+  ) => {
+    if (event.candidate) {
+      await sendIceCandidate(event.candidate, peerId, examCode)
+    } else {
+      console.log("Ice gathering complete")
+    }
+  }, [examCode])
+
+  const handleRemoteTrackReceived = useCallback((
+    event: RTCTrackEvent,
+    peerId: number
+  ) => {
+    const remoteStream = new MediaStream();
+    remoteStream.addTrack(event.track);
+
+    setPeerConnections(peerConnections =>
+      peerConnections.map(pc => ({
+        ...pc,
+        mediaStream: pc.id === peerId ? remoteStream : undefined
+      }))
+    )
+  }, [])
+
+  const setUpPeerConnectionListeners = useCallback((
+    peerConnection: RTCPeerConnection,
+    peerId: number
+  ) => {
+    // TODO: Do I need to await
+    peerConnection.onicecandidate = async (event) => {
+      handleIceCandidateIdentified(event, peerId)
+    }
+    peerConnection.onconnectionstatechange = () => {
+      console.log('Connection state changed', peerConnection.connectionState)
+    }
+    peerConnection.oniceconnectionstatechange = () => {
+      console.log('ICE connection state changed:', peerConnection.iceConnectionState)
+    }
+    peerConnection.ontrack = (event: RTCTrackEvent) => {
+      handleRemoteTrackReceived(event, peerId)
+    }
+  }, [handleIceCandidateIdentified, handleRemoteTrackReceived])
+
   const initiateConnection = useCallback(async (peer: User) => {
     const peerConnection = new RTCPeerConnection(webrtc.configuration)
 
@@ -78,19 +131,7 @@ function usePeerConnection(
     const offer = await peerConnection.createOffer(offerOptions)
     await peerConnection.setLocalDescription(offer)
 
-    peerConnection.onicecandidate = async (event) => {
-      if (event.candidate) {
-        sendIceCandidate(event.candidate, peer.id, examCode)
-      } else {
-        console.log("Ice gathering complete")
-      }
-    }
-    peerConnection.onconnectionstatechange = () => {
-      console.log('Connection state changed', peerConnection.connectionState)
-    }
-    peerConnection.oniceconnectionstatechange = () => {
-      console.log('ICE connection state changed:', peerConnection.iceConnectionState)
-    }
+    setUpPeerConnectionListeners(peerConnection, peer.id)
 
     setPeerConnections(peerConnections => [
       ...peerConnections,
@@ -99,7 +140,7 @@ function usePeerConnection(
 
     sendOffer(offer, peer.id, examCode)
 
-  }, [examCode, mediaStream])
+  }, [examCode, mediaStream, setUpPeerConnectionListeners])
   
   const destroyConnection = useCallback((peerId: number) => {
     const connection = peerConnections.find(pc => pc.id === peerId)
@@ -111,29 +152,24 @@ function usePeerConnection(
 
 
   useEffect(() => {
-    onJoining(async peer => {
+    onJoining(peer => {
       if (user.role !== peer.role) {
-        await initiateConnection(peer)
+        initiateConnection(peer)
       }
     })
   }, [initiateConnection, onJoining, user.role])
 
   useEffect(() => {
-    onLeaving(peer => {
-      if (user.role !== peer.role) {
-        destroyConnection(peer.id)
-      }
-    })
+    onLeaving(peer => destroyConnection(peer.id))
     return onLeavingStop
   }, [destroyConnection, onLeaving, onLeavingStop, user.role])
 
   useEffect(() => {
     listen('PeerConnectionAnswer', async (answer: any) => {
       if (answer.recipientId === user.id) {
-        const connection = peerConnections.find(pc => pc.id === answer.senderId)
+        const connection = getPeerConnectionById(peerConnections, answer.senderId)
         if (connection) {
-          const peerConnection = connection.peerConnection
-
+          const { peerConnection } = connection
           webrtc.fixOfferOrAnswer(answer.answer)
           await peerConnection.setRemoteDescription(answer.answer)
         }
@@ -145,10 +181,7 @@ function usePeerConnection(
   useEffect(() => {
     listen('PeerConnectionICE', async (iceMessage) => {
       if (iceMessage.recipientId === user.id) {
-        console.log('iceMessage', iceMessage)
-        if (iceMessage.recipientId === user.id) {
-          webrtc.handleIceCandidateReceived(iceMessage, peerConnections)
-        }
+        webrtc.handleIceCandidateReceived(iceMessage, peerConnections)
       }
     })
     return () => stopListening('PeerConnectionICE')
@@ -160,42 +193,16 @@ function usePeerConnection(
         const peerConnection = new RTCPeerConnection(webrtc.configuration);
         const connection: PeerConnection = { id: offer.senderId, peerConnection }
 
+        for (const track of mediaStream.getTracks()) {
+          peerConnection.addTrack(track, mediaStream)
+        }
+
         setPeerConnections((peerConnections) => [
           ...peerConnections,
           connection,
         ]);
         
-        peerConnection.onicecandidate = async (event) => {
-          if (event.candidate) {
-            await sendIceCandidate(event.candidate, offer.senderId, examCode)
-          } else {
-            console.log("Ice gathering complete")
-          }
-        }
-        peerConnection.onconnectionstatechange = () => {
-          console.log('Connection state changed', peerConnection.connectionState)
-        }
-        peerConnection.oniceconnectionstatechange = () => {
-          console.log('ICE connection state changed:', peerConnection.iceConnectionState)
-          peerConnection.onicecandidate = null
-        }
-
-        peerConnection.ontrack = (event: RTCTrackEvent) => {
-          const remoteStream = new MediaStream();
-          console.log('Track added')
-          remoteStream.addTrack(event.track);
-          connection.mediaStream = remoteStream
-          // setPeerConnections(peerConnections => peerConnections)
-          setPeerConnections(peerConnections => {
-            const pcs = peerConnections.map(pc => {
-              if (pc.id === offer.senderId) {
-                pc.mediaStream = remoteStream
-              }
-              return pc
-            })
-            return pcs
-          })
-        }
+        setUpPeerConnectionListeners(peerConnection, offer.senderId)
 
         webrtc.fixOfferOrAnswer(offer.offer)
         await peerConnection.setRemoteDescription(offer.offer);
@@ -207,7 +214,7 @@ function usePeerConnection(
       }
     })
     return () => stopListening('PeerConnectionOffer')
-  }, [examCode, listen, stopListening, user.id])
+  }, [examCode, handleRemoteTrackReceived, listen, mediaStream, setUpPeerConnectionListeners, stopListening, user.id])
 
   return { peerConnections }
 }

@@ -10,11 +10,9 @@ type Props = React.PropsWithChildren<{
 }>
 
 function ExamRoom({ webcamStream }: Props) {
-  // const [peerConnections, setPeerConnections] = useState<PeerConnection[]>([]);
   const { user, logout } = useAuth()
   //@ts-ignore
   const { code } = useParams()
-
   const { peerConnections } = usePeerConnection(code, webcamStream, user)
 
   useEffect(() => {
