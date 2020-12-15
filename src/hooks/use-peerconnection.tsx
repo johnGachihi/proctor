@@ -63,6 +63,7 @@ function usePeerConnection(
   examCode: string,
   mediaStream: MediaStream,
   user: User,
+  onProctoringMessageCallback?: (event: MessageEvent) => void
 ) {
   const [peerConnections, setPeerConnections] = useState<PeerConnection[]>([])
 
@@ -116,7 +117,7 @@ function usePeerConnection(
     peerConnection.oniceconnectionstatechange = () => {
       console.log('ICE connection state changed:', peerConnection.iceConnectionState)
     }
-    peerConnection.ontrack = (event: RTCTrackEvent) => {
+    peerConnection.ontrack = (event) => {
       handleRemoteTrackReceived(event, peerId)
     }
   }, [handleIceCandidateIdentified, handleRemoteTrackReceived])
@@ -128,6 +129,11 @@ function usePeerConnection(
       peerConnection.addTrack(track, mediaStream)
     }
 
+    const dataChannel = peerConnection.createDataChannel('proctoringChannel')
+    if (onProctoringMessageCallback) {
+      dataChannel.onmessage = onProctoringMessageCallback
+    }
+
     const offer = await peerConnection.createOffer(offerOptions)
     await peerConnection.setLocalDescription(offer)
 
@@ -135,12 +141,12 @@ function usePeerConnection(
 
     setPeerConnections(peerConnections => [
       ...peerConnections,
-      {id: peer.id, peerConnection}
+      {id: peer.id, peerConnection, dataChannel}
     ])
 
     sendOffer(offer, peer.id, examCode)
 
-  }, [examCode, mediaStream, setUpPeerConnectionListeners])
+  }, [examCode, mediaStream, onProctoringMessageCallback, setUpPeerConnectionListeners])
   
   const destroyConnection = useCallback((peerId: number) => {
     const connection = peerConnections.find(pc => pc.id === peerId)
@@ -149,6 +155,17 @@ function usePeerConnection(
       setPeerConnections(peerConnections.filter(pc => pc.id !== peerId))
     }
   }, [peerConnections])
+
+  const sendProctoringMessage = useCallback((message: string) => {
+    for (const connection of peerConnections) {
+      if (connection.dataChannel &&
+          connection.dataChannel.readyState === 'open'
+      ) {
+        const msg: Message = { senderId: user.id, message }
+        connection.dataChannel.send(JSON.stringify(msg))
+      }
+    }
+  }, [peerConnections, user.id])
 
 
   useEffect(() => {
@@ -204,6 +221,20 @@ function usePeerConnection(
         
         setUpPeerConnectionListeners(peerConnection, offer.senderId)
 
+        peerConnection.ondatachannel = (event) => {
+          const { channel } = event
+          if (onProctoringMessageCallback) {
+            channel.onmessage = onProctoringMessageCallback
+          }
+    
+          setPeerConnections(peerConnections =>
+            peerConnections.map(pc => ({
+              ...pc,
+              dataChannel: pc.id === offer.senderId ? channel : undefined
+            }))
+          )
+        }
+
         webrtc.fixOfferOrAnswer(offer.offer)
         await peerConnection.setRemoteDescription(offer.offer);
 
@@ -214,9 +245,18 @@ function usePeerConnection(
       }
     })
     return () => stopListening('PeerConnectionOffer')
-  }, [examCode, handleRemoteTrackReceived, listen, mediaStream, setUpPeerConnectionListeners, stopListening, user.id])
+  }, [
+    examCode,
+    handleRemoteTrackReceived,
+    listen,
+    mediaStream,
+    onProctoringMessageCallback,
+    setUpPeerConnectionListeners,
+    stopListening,
+    user.id,
+  ])
 
-  return { peerConnections }
+  return { peerConnections, sendProctoringMessage }
 }
 
 export { usePeerConnection }

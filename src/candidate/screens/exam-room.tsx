@@ -12,7 +12,10 @@ function ExamRoom({ webcamStream }: Props) {
   const { user, logout } = useAuth()
   //@ts-ignore
   const { code } = useParams()
-  const { peerConnections } = usePeerConnection(code, webcamStream, user)
+  const {
+    peerConnections,
+    sendProctoringMessage
+  } = usePeerConnection(code, webcamStream, user)
   const videoEl = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
@@ -24,6 +27,14 @@ function ExamRoom({ webcamStream }: Props) {
   useEffect(() => {
     console.log(peerConnections)
   }, [peerConnections])
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      sendProctoringMessage('Possibly cheating')
+    }, 2000)
+
+    return () => clearInterval(intervalId)
+  }, [sendProctoringMessage])
 
   return (
     <div>
