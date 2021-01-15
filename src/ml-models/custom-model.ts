@@ -18,7 +18,7 @@ class CustomModel implements Model {
 
   private infer(img: tf.Tensor3D) {
     return tf.tidy(() => {
-      img = tf.cast(img, 'float32')
+      img = img.toFloat()
       img = img.reshape([-1, ...img.shape])
       return this.model.predict(img) as tf.Tensor2D
     })
@@ -26,11 +26,11 @@ class CustomModel implements Model {
 
   async classify(img: tf.Tensor3D) {
     const logits = this.infer(img) as tf.Tensor2D
-    const prediction = this.getReadablePrediction(logits)
+    // const prediction = this.getReadablePrediction(logits)
 
-    logits.dispose()
+    // logits.dispose()
 
-    return prediction
+    return await logits.data()
   }
 
   async getReadablePrediction(logits: tf.Tensor2D) {
@@ -39,7 +39,7 @@ class CustomModel implements Model {
     softmax.dispose()
 
     const classMap = [
-      'blink', 'on-keyboard', 'on-screen', 'possibly-cheating'
+      'irregular' ,'regular'
     ]
 
     const valuesWithClasses = []
@@ -52,7 +52,7 @@ class CustomModel implements Model {
 
     valuesWithClasses.sort((a, b) => b.value - a.value)
 
-    return valuesWithClasses
+    return values
   }
 
   dispose() {

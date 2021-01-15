@@ -2,8 +2,8 @@ import React, { PropsWithChildren, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/auth-context'
 import { usePeerConnection } from '../../hooks/use-peerconnection'
-import getModel from '../../ml-models/get-model'
-import * as tf from '@tensorflow/tfjs'
+import useProctorModel from '../../hooks/use-ml-model'
+import { FullPageErrorFallback, FullPageSpinner } from '../../components/lib'
 
 
 type Props = PropsWithChildren<{
@@ -14,11 +14,24 @@ function ExamRoom({ webcamStream }: Props) {
   const { user, logout } = useAuth()
   //@ts-ignore
   const { code } = useParams()
+  const videoEl = useRef<HTMLVideoElement>(null)
+
   const {
     peerConnections,
-    sendProctoringMessage
+    // sendProctoringMessage
   } = usePeerConnection(code, webcamStream, user)
-  const videoEl = useRef<HTMLVideoElement>(null)
+
+  const {
+    modelStatus,
+    modelLoadingError,
+    isModelLoadingError,
+    isModelLoading,
+    initiateProctoring,
+    terminateProctoring,
+  } = useProctorModel()
+
+  // TO BE REMOVED
+  useEffect(() => console.log(modelStatus), [modelStatus])
 
   useEffect(() => {
     if (videoEl && webcamStream) {
@@ -26,38 +39,25 @@ function ExamRoom({ webcamStream }: Props) {
     }
   }, [videoEl, webcamStream])
 
+  // TO BE REMOVED
   useEffect(() => {
     console.log(peerConnections)
   }, [peerConnections])
 
   useEffect(() => {
-    const intervalId = setInterval(() => {
-      sendProctoringMessage('Possibly cheating')
-    }, 2000)
-
-    let flag = true
-
-    getModel('custom-model').then(async model => {
-      console.log('Model loaded')
-      if (videoEl) {
-        const webcam = await tf.data.webcam(videoEl.current!)
-        while (flag) {
-          const img = await webcam.capture()
-          const result = await model?.classify(img)
-          console.log(result)
-          sendProctoringMessage(JSON.stringify(result))
-          img.dispose()
-          await tf.nextFrame()
-        }
-        model?.dispose()
-      }
-    })
-
-    return () => {
-      clearInterval(intervalId)
-      flag = false
+    if (videoEl.current) {
+      initiateProctoring(videoEl.current, console.log)
     }
-  }, [sendProctoringMessage])
+    return terminateProctoring
+  }, [initiateProctoring, terminateProctoring])
+
+  if (isModelLoading) {
+    return <FullPageSpinner />
+  }
+
+  if (isModelLoadingError) {
+    return <FullPageErrorFallback error={modelLoadingError} />
+  }
 
   return (
     <div>
@@ -66,8 +66,8 @@ function ExamRoom({ webcamStream }: Props) {
       <video
         autoPlay
         ref={videoEl}
-        width="150"
-        height="150"
+        width="300"
+        height="300"
       ></video>
     </div>
   )

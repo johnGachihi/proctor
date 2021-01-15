@@ -18,7 +18,7 @@ type Props = PropsWithChildren<{
 function CandidateHome({ setWebcamStream }: Props) {
   const [examCode, setExamCode] = useState("");
   const [examCodeErrors, setExamCodeErrors] = useState<string[]>([]);
-  const { run, isLoading } = useAsync();
+  const { run, isLoading } = useAsync<any>();
   const history = useHistory();
 
   async function handleClickJoin() {

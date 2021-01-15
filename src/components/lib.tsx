@@ -1,7 +1,7 @@
 /** @jsx jsx */
 import { jsx } from '@emotion/core'
 import styled from '@emotion/styled';
-import { Caption } from '@material/react-typography';
+import { Body1, Caption } from '@material/react-typography';
 
 import BarLoader from 'react-spinners/BarLoader';
 
@@ -37,8 +37,8 @@ function FullPageErrorFallback({error}: Error) {
         alignItems: 'center',
       }}
     >
-      <p>Uh oh... There's a problem. Try refreshing the app.</p>
-      <pre>{error.message}</pre>
+      <Body1>Uh oh... There's a problem. Try refreshing the app.</Body1>
+      <Caption>{error.message}</Caption>
     </div>
   )
 }

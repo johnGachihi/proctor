@@ -1,21 +1,21 @@
 import React from 'react';
 
-type AsyncState = {
+type AsyncState<T> = {
   status: string;
-  data?: any;
+  data?: T;
   error?: any;
 }
 
-const defaultInitialState: AsyncState = {
+const defaultInitialState: AsyncState<any> = {
   status: 'idle', data: null, error: null}
 
-function useAsync(initialState?: AsyncState) {
-  const initialStateRef = React.useRef<AsyncState>({
+function useAsync<T>(initialState?: AsyncState<T>) {
+  const initialStateRef = React.useRef<AsyncState<T>>({
     ...defaultInitialState,
     ...initialState
   })
   const [{status, data, error}, setState] = React.useReducer(
-    (s: AsyncState, a: AsyncState) => ({...s, ...a}),
+    (s: AsyncState<T>, a: AsyncState<T>) => ({...s, ...a}),
     initialStateRef.current
   )
 
@@ -36,7 +36,7 @@ function useAsync(initialState?: AsyncState) {
     [safeSetState]
   )
 
-  const run = React.useCallback<(<T>(promise: Promise<T>) => Promise<T>)>(
+  const run = React.useCallback<((promise: Promise<T>) => Promise<T>)>(
     promise => {
       safeSetState({status: 'pending'})
       return promise.then(
@@ -68,7 +68,7 @@ function useAsync(initialState?: AsyncState) {
   }
 }
 
-function useSafeDispatch(dispatch: React.Dispatch<AsyncState>) {
+function useSafeDispatch<T>(dispatch: React.Dispatch<AsyncState<T>>) {
   const mounted = React.useRef(false)
   React.useLayoutEffect(() => {
     mounted.current = true
@@ -76,7 +76,7 @@ function useSafeDispatch(dispatch: React.Dispatch<AsyncState>) {
   }, [])
 
   return React.useCallback(
-    (state: AsyncState) => (mounted.current ? dispatch(state) : void 0),
+    (state: AsyncState<T>) => (mounted.current ? dispatch(state) : void 0),
     [dispatch]
   )
 }
