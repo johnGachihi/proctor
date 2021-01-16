@@ -1,4 +1,4 @@
-import React, { PropsWithChildren, useEffect, useRef } from 'react'
+import React, { PropsWithChildren, useEffect, useMemo, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/auth-context'
 import { usePeerConnection } from '../../hooks/use-peerconnection'
@@ -18,7 +18,8 @@ function ExamRoom({ webcamStream }: Props) {
 
   const {
     peerConnections,
-    // sendProctoringMessage
+    // sendProctoringMessage,
+    someConnectionsEstablished,
   } = usePeerConnection(code, webcamStream, user)
 
   const {
@@ -26,6 +27,7 @@ function ExamRoom({ webcamStream }: Props) {
     modelLoadingError,
     isModelLoadingError,
     isModelLoading,
+    isModelLoaded,
     initiateProctoring,
     terminateProctoring,
   } = useProctorModel()
@@ -33,23 +35,38 @@ function ExamRoom({ webcamStream }: Props) {
   // TO BE REMOVED
   useEffect(() => console.log(modelStatus), [modelStatus])
 
+  // TO BE REMOVED
   useEffect(() => {
-    if (videoEl && webcamStream) {
-      videoEl.current!.srcObject = webcamStream
-    }
-  }, [videoEl, webcamStream])
+    console.log(`someConnectionsEstablished: ${someConnectionsEstablished}`)
+  }, [someConnectionsEstablished])
 
   // TO BE REMOVED
   useEffect(() => {
     console.log(peerConnections)
   }, [peerConnections])
 
+  const prepared = useMemo<boolean>(() => {
+    return someConnectionsEstablished && isModelLoaded
+  }, [isModelLoaded, someConnectionsEstablished])
+
   useEffect(() => {
-    if (videoEl.current) {
-      initiateProctoring(videoEl.current, console.log)
+    if (prepared && videoEl.current && webcamStream) {
+      videoEl.current!.srcObject = webcamStream
+    }
+  }, [webcamStream, prepared])
+
+  useEffect(() => {
+    if (prepared && videoEl.current) {
+      videoEl.current.onloadeddata = () => {
+        initiateProctoring(videoEl.current!!, console.log)
+      }
     }
     return terminateProctoring
-  }, [initiateProctoring, terminateProctoring])
+  }, [initiateProctoring, terminateProctoring, prepared])
+
+  if (peerConnections.length < 1) {
+    return <div>No invigilators in exam.</div>
+  }
 
   if (isModelLoading) {
     return <FullPageSpinner />

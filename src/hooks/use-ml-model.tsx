@@ -21,9 +21,10 @@ function useProctorModel() {
     if (isModelLoaded) {
       shouldRunRef.current = true
 
-      const webcam = await tf.data.webcam(videoEl)
+      // const webcam = await tf.data.webcam(videoEl)
       while(shouldRunRef.current){
-        const img = await webcam.capture()
+        // const img = await webcam.capture()
+        const img = tf.browser.fromPixels(videoEl)
         const result = await model?.classify(img)
         img.dispose()
         
@@ -45,6 +46,7 @@ function useProctorModel() {
     modelLoadingError: asyncStatus.error,
     isModelLoadingError: asyncStatus.isError,
     isModelLoading: asyncStatus.isLoading,
+    isModelLoaded,
     initiateProctoring,
     terminateProctoring
   }

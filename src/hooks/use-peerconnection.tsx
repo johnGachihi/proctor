@@ -66,6 +66,10 @@ function usePeerConnection(
   onProctoringMessageCallback?: (event: MessageEvent) => void
 ) {
   const [peerConnections, setPeerConnections] = useState<PeerConnection[]>([])
+  const [
+    someConnectionsEstablished,
+    setSomeConnectionsEstablished
+  ] = useState<boolean>(false)
 
   // TODO: Remove useMemo
   const channel = useMemo(() => `exam.${examCode}`, [examCode])
@@ -116,6 +120,7 @@ function usePeerConnection(
     }
     peerConnection.oniceconnectionstatechange = () => {
       console.log('ICE connection state changed:', peerConnection.iceConnectionState)
+      setSomeConnectionsEstablished(true)
     }
     peerConnection.ontrack = (event) => {
       handleRemoteTrackReceived(event, peerId)
@@ -256,7 +261,7 @@ function usePeerConnection(
     user.id,
   ])
 
-  return { peerConnections, sendProctoringMessage }
+  return { peerConnections, sendProctoringMessage, someConnectionsEstablished }
 }
 
 export { usePeerConnection }
