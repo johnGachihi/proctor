@@ -1,10 +1,16 @@
 import * as tf from "@tensorflow/tfjs";
 import Model from "./Model";
+import ZipIOHandler from "./zip-io-handler"
 const modelUrl = process.env.REACT_APP_CUSTOM_MODEL
 
 async function loadCustomModel() {
-  const model = await tf.loadGraphModel(modelUrl
-    ?? 'http://johngachihi.com/ml-models/custom-model-js/model.json');
+  // const model = await tf.loadGraphModel(modelUrl
+    // ?? 'http://johngachihi.com/ml-models/custom-model-js/model.json');
+
+  // http://johngachihi.com/ml-models/custom-model-js/model.json
+  // http://johngachihi.com/ml-models/custom-model-js/model.json
+  const ioHandler = new ZipIOHandler('http://johngachihi.com/ml-models/custom-model-js');
+  const model = await tf.loadGraphModel(ioHandler);
 
   return new CustomModel(model)
 }
