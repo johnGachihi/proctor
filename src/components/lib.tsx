@@ -21,6 +21,24 @@ function FullPageSpinner() {
 }
 
 
+type FullPageMessageProps = {
+  message: string
+}
+function FullPageMessage({message}: FullPageMessageProps) {
+  return (
+    <div css={{
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'center',
+      alignItems: 'center',
+    }}>
+      <Body1>{message}</Body1>
+    </div>
+  )
+}
+
+
 type Error = {
   error: any;
 }
@@ -50,4 +68,9 @@ const ErrorMessage = styled(Caption)`
 `;
 
 
-export {FullPageSpinner, FullPageErrorFallback, ErrorMessage}
+export {
+  FullPageSpinner,
+  FullPageMessage,
+  FullPageErrorFallback,
+  ErrorMessage
+}

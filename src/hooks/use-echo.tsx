@@ -4,15 +4,27 @@ import EchoClient from '../network/echo-client'
 
 
 function useEchoPresence(channelName: string) {
-  const [subscribers, setSubscribers] = useState([])
+  const [subscribers, setSubscribers] = useState<any[]>([])
+
+  useEffect(() => {
+    console.log(`useEchoPresence: Subscribers`, subscribers)
+  }, [subscribers])
 
   const connect = useCallback(() => {
     return EchoClient.join(channelName)
     .here((users: any) => {
       setSubscribers(users)
     })
-    // .joining(console.log)
-    // .leaving(console.log)
+    .joining((subscriber: any) => {
+      console.log('useEchoPresence: joining', subscriber)
+      setSubscribers(subscribers => [...subscribers, subscriber])
+    })
+    .leaving((subscriber: any) => {
+      console.log('useEchoPresence: leaving', subscriber)
+      setSubscribers(subscribers => {
+        return subscribers.filter(_subscriber => _subscriber.id !== subscriber.id)
+      })
+    })
   }, [channelName])
 
   const leave = useCallback(() => {

@@ -46,10 +46,17 @@ function ExamRoom({ webcamStream }: Props) {
     onProctoringMessage
   )
 
-  
+  // TO BE REMOVED
   useEffect(() => {
-    console.log(candidates)
+    console.log('ExamRoom: Candidates', candidates)
   }, [candidates])
+
+  // TO BE REMOVED
+  // useEffect(() => {
+    // return () => {
+      // console.log('Proctor exam-room: Destroying Exam room')
+    // }
+  // }, [])
 
   useEffect(() => {
     setCandidates(candidates => {

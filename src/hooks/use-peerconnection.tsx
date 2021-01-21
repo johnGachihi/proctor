@@ -79,6 +79,7 @@ function usePeerConnection(
     onJoining,
     onLeaving,
     onLeavingStop,
+    subscribers: membersInExam
   } = useEchoPresence(channel)
 
   const handleIceCandidateIdentified = useCallback(async (
@@ -182,8 +183,10 @@ function usePeerConnection(
   }, [initiateConnection, onJoining, user.role])
 
   useEffect(() => {
-    onLeaving(peer => destroyConnection(peer.id))
-    return onLeavingStop
+    onLeaving(peer => {
+      destroyConnection(peer.id)
+    })
+    // return onLeavingStop
   }, [destroyConnection, onLeaving, onLeavingStop, user.role])
 
   useEffect(() => {
@@ -261,7 +264,12 @@ function usePeerConnection(
     user.id,
   ])
 
-  return { peerConnections, sendProctoringMessage, someConnectionsEstablished }
+  return {
+    peerConnections,
+    sendProctoringMessage,
+    someConnectionsEstablished,
+    membersInExam
+  }
 }
 
 export { usePeerConnection }

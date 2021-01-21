@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/auth-context'
 import { usePeerConnection } from '../../hooks/use-peerconnection'
 import useProctorModel from '../../hooks/use-ml-model'
-import { FullPageErrorFallback, FullPageSpinner } from '../../components/lib'
+import { FullPageErrorFallback, FullPageMessage, FullPageSpinner } from '../../components/lib'
 
 
 type Props = PropsWithChildren<{
@@ -20,6 +20,7 @@ function ExamRoom({ webcamStream }: Props) {
     peerConnections,
     // sendProctoringMessage,
     someConnectionsEstablished,
+    membersInExam
   } = usePeerConnection(code, webcamStream, user)
 
   const {
@@ -64,16 +65,20 @@ function ExamRoom({ webcamStream }: Props) {
     return terminateProctoring
   }, [initiateProctoring, terminateProctoring, prepared])
 
-  if (peerConnections.length < 1) {
-    return <div>No invigilators in exam.</div>
+  const presentProctors = useMemo(() => {
+    return membersInExam.filter(member => member.role === 'proctor')
+  }, [membersInExam])
+
+  if (isModelLoadingError) {
+    return <FullPageErrorFallback error={modelLoadingError} />
+  }
+
+  if (presentProctors.length < 1) {
+    return <FullPageMessage message="No invigilators in exam!"/>
   }
 
   if (isModelLoading) {
     return <FullPageSpinner />
-  }
-
-  if (isModelLoadingError) {
-    return <FullPageErrorFallback error={modelLoadingError} />
   }
 
   return (
