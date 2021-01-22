@@ -1,7 +1,6 @@
 import client from '../network/client'
 import moxios from 'moxios'
 import ZipIOHandler from './zip-io-handler'
-import * as tf from '@tensorflow/tfjs'
 
 
 describe('Test ZipIOHandler', () => {
