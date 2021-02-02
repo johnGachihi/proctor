@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/auth-context";
 import { usePeerConnection } from "../../hooks/use-peerconnection";
+import useAsync from "../../utils/use-async";
 
 type Props = React.PropsWithChildren<{
-  webcamStream: MediaStream
+  webcamStream: MediaStream,
+  setWebcamStream: (webcamStream: MediaStream) => void
 }>
 
 type Candidate = {
@@ -16,12 +18,13 @@ type Candidate = {
   dataChannel?: RTCDataChannel
 }
 
-function ExamRoom({ webcamStream }: Props) {
+function ExamRoom({ webcamStream, setWebcamStream }: Props) {
   const { user, logout } = useAuth()
   //@ts-ignore
   const { code } = useParams()
   
   const [candidates, setCandidates] = useState<Candidate[]>()
+  const { run } = useAsync<MediaStream>()
 
   const onProctoringMessage = useCallback((event: MessageEvent) => {
     console.log(event)
@@ -51,12 +54,14 @@ function ExamRoom({ webcamStream }: Props) {
     console.log('ExamRoom: Candidates', candidates)
   }, [candidates])
 
-  // TO BE REMOVED
-  // useEffect(() => {
-    // return () => {
-      // console.log('Proctor exam-room: Destroying Exam room')
-    // }
-  // }, [])
+  useEffect(() => {
+    if (! webcamStream) {
+      run(navigator.mediaDevices.getUserMedia({ video: true }))
+        .then(mediaStream => {
+          setWebcamStream(mediaStream)
+        })
+    }
+  }, [run, setWebcamStream, webcamStream])
 
   useEffect(() => {
     setCandidates(candidates => {

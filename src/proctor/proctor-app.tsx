@@ -9,7 +9,7 @@ function ProctorApp() {
   return (
     <Switch>
       <Route path="/exam/:code">
-        <ExamRoom webcamStream={ webcamStream! }/>
+        <ExamRoom webcamStream={ webcamStream! } setWebcamStream={ setWebcamStream } />
       </Route>
       <Route path="/">
         <ProctorHome setWebcamStream={setWebcamStream}/>
