@@ -6,21 +6,15 @@ import EchoClient from '../network/echo-client'
 function useEchoPresence(channelName: string) {
   const [subscribers, setSubscribers] = useState<any[]>([])
 
-  useEffect(() => {
-    console.log(`useEchoPresence: Subscribers`, subscribers)
-  }, [subscribers])
-
   const connect = useCallback(() => {
     return EchoClient.join(channelName)
     .here((users: any) => {
       setSubscribers(users)
     })
     .joining((subscriber: any) => {
-      console.log('useEchoPresence: joining', subscriber)
       setSubscribers(subscribers => [...subscribers, subscriber])
     })
     .leaving((subscriber: any) => {
-      console.log('useEchoPresence: leaving', subscriber)
       setSubscribers(subscribers => {
         return subscribers.filter(_subscriber => _subscriber.id !== subscriber.id)
       })
@@ -35,19 +29,25 @@ function useEchoPresence(channelName: string) {
 
   const onJoining = useCallback((callback: (user: User) => void) => {
     if (channel) {
-      channel.joining(callback)
+      channel.subscription.bind('pusher:member_added', callback)
+    }
+  }, [channel])
+
+  const onJoiningStop = useCallback((callback: Function) => {
+    if (channel) {
+      channel.subscription.unbind('pusher:member_added', callback)
     }
   }, [channel])
 
   const onLeaving = useCallback((callback: (user: User) => void) => {
     if (channel) {
-      channel.leaving(callback)
+      channel.subscription.bind('pusher:member_removed', callback)
     }
   }, [channel])
 
-  const onLeavingStop = useCallback(() => {
+  const onLeavingStop = useCallback((callback: Function) => {
     if (channel) {
-      channel.stopListening('.pusher:member_removed')
+      channel.subscription.unbind('pusher:member_added', callback)
     }
   }, [channel])
 
@@ -56,6 +56,7 @@ function useEchoPresence(channelName: string) {
     stopListening,
     subscribers,
     onJoining,
+    onJoiningStop,
     onLeaving,
     onLeavingStop
   }
