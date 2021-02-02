@@ -1,6 +1,6 @@
 import * as tf from '@tensorflow/tfjs'
 import JSZip from 'jszip'
-import client from '../network/client'
+import { fetchModelJson, fetchWeightFile, getWeightNames } from './utils'
 
 class ZipIOHandler implements tf.io.IOHandler {
   private modelUrl: string
@@ -19,7 +19,7 @@ class ZipIOHandler implements tf.io.IOHandler {
 
   async load(): Promise<tf.io.ModelArtifacts> {
     const modelJsonUrl = this.modelUrl + this.modelJsonName
-    const modelJson: tf.io.ModelJSON = await client.get(modelJsonUrl, {withCredentials: false})
+    const modelJson: tf.io.ModelJSON = await fetchModelJson(modelJsonUrl)
 
     const modelArtifacts: tf.io.ModelArtifacts = {
       modelTopology: modelJson.modelTopology,
@@ -29,7 +29,7 @@ class ZipIOHandler implements tf.io.IOHandler {
     }
 
     let weightSpecs: tf.io.WeightsManifestEntry[] = []
-    let weightData: ArrayBuffer
+    let weightData: ArrayBuffer | undefined
 
     if (modelJson.weightsManifest) {
       [weightSpecs, weightData]
@@ -37,7 +37,6 @@ class ZipIOHandler implements tf.io.IOHandler {
     }
 
     modelArtifacts.weightSpecs = weightSpecs
-    // @ts-ignore
     modelArtifacts.weightData = weightData
 
     return modelArtifacts
@@ -52,42 +51,45 @@ class ZipIOHandler implements tf.io.IOHandler {
       weightSpecs.push(...group.weights)
     }
 
+    const weightData = await this.loadAndProcessWeights(weightsManifest)
+
+    return [weightSpecs, weightData]
+  }
+
+  private async loadAndProcessWeights(
+    weightsManifest: tf.io.WeightsManifestConfig
+  ): Promise<ArrayBuffer>
+  {
     const weightNames: string[] = getWeightNames(weightsManifest)
     const requests = this.getFetchWeightRequestPromises(weightNames)
     const zippedWeights = await Promise.all(requests)
-
-    const unzipWeightsPromises = zippedWeights.map(async (zippedWeightFile, idx) => {
-      return (await JSZip.loadAsync(zippedWeightFile))
-        .file(weightNames[idx])?.async('arraybuffer')
-    })
-
-    // @ts-ignore
-    const buffers: ArrayBuffer[] = await Promise.all(unzipWeightsPromises)
-
-    return [weightSpecs, tf.io.concatenateArrayBuffers(buffers)]
+    const unzipWeightsPromises =
+      this.getUnzipWeightFilesPromises(zippedWeights, weightNames)
+    const unzippedWeights = await Promise.all(unzipWeightsPromises)
+    
+    return tf.io.concatenateArrayBuffers(unzippedWeights)
   }
 
   private getFetchWeightRequestPromises(weightNames: string[]) {
-    return weightNames.map(weightName => {
-      const fetchUrl = this.modelUrl + weightName + this.weightNameSuffix
-      return client.get(fetchUrl, {
-        responseType: 'arraybuffer', withCredentials: false
-      }) as Promise<ArrayBuffer>
+    return weightNames.map(weightName =>
+      fetchWeightFile(this.getWeightFileUrl(weightName)))
+  }
+
+  private getWeightFileUrl(weightFileName: string) {
+    return this.modelUrl + weightFileName + this.weightNameSuffix
+  }
+
+  private getUnzipWeightFilesPromises(
+    zippedWeightFiles: ArrayBuffer[],
+    weightNames: string[]
+  ): Promise<ArrayBuffer>[]
+  {
+    return zippedWeightFiles.map(async (zippedWeightFile, idx) => {
+      const zip = await JSZip.loadAsync(zippedWeightFile)
+      return await zip.file(weightNames[idx])!.async('arraybuffer')
     })
   }
-
 }
 
-function getWeightNames(
-  weightsManifest: tf.io.WeightsManifestConfig,
-) {
-  const weightNames: string[] = []
-  for (const group of weightsManifest) {
-    for (const path of group.paths) {
-      weightNames.push(path)
-    }
-  }
-  return weightNames
-}
 
 export default ZipIOHandler
