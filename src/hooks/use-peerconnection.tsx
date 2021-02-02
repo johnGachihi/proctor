@@ -77,6 +77,7 @@ function usePeerConnection(
     listen,
     stopListening,
     onJoining,
+    onJoiningStop,
     onLeaving,
     onLeavingStop,
     subscribers: membersInExam
@@ -175,18 +176,27 @@ function usePeerConnection(
 
 
   useEffect(() => {
-    onJoining(peer => {
+    const callback = (peer: User) => {
       if (user.role !== peer.role) {
         initiateConnection(peer)
       }
-    })
-  }, [initiateConnection, onJoining, user.role])
+    }
+    onJoining(callback)
+
+    return () => {
+      onJoiningStop(callback)
+    }
+  }, [initiateConnection, onJoining, onJoiningStop, user.role])
 
   useEffect(() => {
-    onLeaving(peer => {
+    const callback = (peer: any) => {
       destroyConnection(peer.id)
-    })
-    // return onLeavingStop
+    }
+    onLeaving(callback)
+
+    return () => {
+      onLeavingStop(callback)
+    }
   }, [destroyConnection, onLeaving, onLeavingStop, user.role])
 
   useEffect(() => {
