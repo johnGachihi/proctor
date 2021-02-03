@@ -1,18 +1,19 @@
-import React, { useState } from "react";
+import React from "react";
 import { Switch, Route } from "react-router-dom";
 import ExamRoom from "../candidate/screens/exam-room";
+import useWebcam from "../hooks/use-webcam";
 import CandidateHome from "./screens/home";
 
 function CandidateApp() {
-  const [webcamStream, setWebcamStream] = useState<MediaStream>()
+  const { webcamStream, requestWebcamStream } = useWebcam()
 
   return (
     <Switch>
       <Route exact path="/exam/:code">
-        <ExamRoom webcamStream={webcamStream!} setWebcamStream={setWebcamStream} />
+        <ExamRoom webcamStream={webcamStream!} requestWebcamStream={ requestWebcamStream } />
       </Route>
       <Route exact path="/">
-        <CandidateHome setWebcamStream={setWebcamStream}/>
+        <CandidateHome requestWebcamStream={requestWebcamStream}/>
       </Route>
     </Switch>
   );

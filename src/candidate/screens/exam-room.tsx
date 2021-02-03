@@ -4,20 +4,18 @@ import { useAuth } from '../../contexts/auth-context'
 import { usePeerConnection } from '../../hooks/use-peerconnection'
 import useProctorModel from '../../hooks/use-ml-model'
 import { FullPageErrorFallback, FullPageMessage, FullPageSpinner } from '../../components/lib'
-import useAsync from '../../utils/use-async'
 
 
 type Props = PropsWithChildren<{
-  webcamStream?: MediaStream;
-  setWebcamStream: (webcamStream: MediaStream) => void
+  webcamStream?: MediaStream
+  requestWebcamStream: () => void
 }>
 
-function ExamRoom({ webcamStream, setWebcamStream }: Props) {
+function ExamRoom({ webcamStream, requestWebcamStream }: Props) {
   const { user, logout } = useAuth()
   //@ts-ignore
   const { code } = useParams()
   const videoEl = useRef<HTMLVideoElement>(null)
-  const { run, isLoading: isWebcamStreamLoading } = useAsync<MediaStream>()
 
   const {
     peerConnections,
@@ -51,12 +49,9 @@ function ExamRoom({ webcamStream, setWebcamStream }: Props) {
 
   useEffect(() => {
     if (! webcamStream) {
-      run(navigator.mediaDevices.getUserMedia({ video: true }))
-        .then(mediaStream => {
-          setWebcamStream(mediaStream)
-        })
+      requestWebcamStream()
     }
-  }, [run, setWebcamStream, webcamStream])
+  }, [requestWebcamStream, webcamStream])
 
   const prepared = useMemo<boolean>(() => {
     return someConnectionsEstablished && isModelLoaded
@@ -90,10 +85,6 @@ function ExamRoom({ webcamStream, setWebcamStream }: Props) {
   }
 
   if (isModelLoading) {
-    return <FullPageSpinner />
-  }
-
-  if (isWebcamStreamLoading) {
     return <FullPageSpinner />
   }
 

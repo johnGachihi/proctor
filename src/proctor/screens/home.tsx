@@ -13,10 +13,10 @@ import { useHistory } from "react-router-dom";
 import { ErrorMessage } from "../../components/lib";
 
 type Props = PropsWithChildren<{
-  setWebcamStream: (stream: MediaStream) => void
+  requestWebcamStream: () => void
 }>
 
-function ProctorHome({ setWebcamStream }: Props) {
+function ProctorHome({ requestWebcamStream }: Props) {
   const [examCode, setExamCode] = useState("");
   const [examCodeErrors, setExamCodeErrors] = useState<string[]>([])
   const { run, isLoading, isSuccess, isError, error, data } = useAsync();
@@ -30,7 +30,7 @@ function ProctorHome({ setWebcamStream }: Props) {
   async function handleClickJoin() {
     try {
       await run(client("check_code", { params: { code: examCode } }));
-      await getWebcamStream()
+      await requestWebcamStream()
       history.push(`exam/${examCode}`);
     } catch (error) {
       setExamCodeErrors(error.fields?.code ?? [])
@@ -41,11 +41,6 @@ function ProctorHome({ setWebcamStream }: Props) {
         console.log('Please grant webcam permissions on your browser')
       }
     }
-  }
-
-  async function getWebcamStream() {
-    const stream = await run(navigator.mediaDevices.getUserMedia({ video: true }))
-    setWebcamStream(stream)
   }
 
   useEffect(() => {
