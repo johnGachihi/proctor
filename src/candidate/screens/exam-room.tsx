@@ -9,9 +9,10 @@ import { FullPageErrorFallback, FullPageMessage, FullPageSpinner } from '../../c
 type Props = PropsWithChildren<{
   webcamStream?: MediaStream
   requestWebcamStream: () => void
+  stopWebcamStream: () => void
 }>
 
-function ExamRoom({ webcamStream, requestWebcamStream }: Props) {
+function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props) {
   const { user, logout } = useAuth()
   //@ts-ignore
   const { code } = useParams()
@@ -52,6 +53,12 @@ function ExamRoom({ webcamStream, requestWebcamStream }: Props) {
       requestWebcamStream()
     }
   }, [requestWebcamStream, webcamStream])
+
+  useEffect(() => {
+    return () => {
+      stopWebcamStream()
+    }
+  }, [stopWebcamStream])
 
   const prepared = useMemo<boolean>(() => {
     return someConnectionsEstablished && isModelLoaded

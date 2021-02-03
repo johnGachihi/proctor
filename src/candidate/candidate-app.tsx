@@ -5,12 +5,15 @@ import useWebcam from "../hooks/use-webcam";
 import CandidateHome from "./screens/home";
 
 function CandidateApp() {
-  const { webcamStream, requestWebcamStream } = useWebcam()
+  const { webcamStream, requestWebcamStream, stopWebcamStream } = useWebcam()
 
   return (
     <Switch>
       <Route exact path="/exam/:code">
-        <ExamRoom webcamStream={webcamStream!} requestWebcamStream={ requestWebcamStream } />
+        <ExamRoom
+          webcamStream={webcamStream!}
+          requestWebcamStream={ requestWebcamStream }
+          stopWebcamStream={ stopWebcamStream } />
       </Route>
       <Route exact path="/">
         <CandidateHome requestWebcamStream={requestWebcamStream}/>

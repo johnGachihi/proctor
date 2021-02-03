@@ -7,7 +7,8 @@ import { usePeerConnection } from "../../hooks/use-peerconnection";
 
 type Props = React.PropsWithChildren<{
   webcamStream: MediaStream
-  requestWebcamStream: () => void
+  requestWebcamStream: () => Promise<void>
+  stopWebcamStream: () => void
 }>
 
 type Candidate = {
@@ -17,7 +18,7 @@ type Candidate = {
   dataChannel?: RTCDataChannel
 }
 
-function ExamRoom({ webcamStream, requestWebcamStream }: Props) {
+function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props) {
   const { user, logout } = useAuth()
   //@ts-ignore
   const { code } = useParams()
@@ -57,6 +58,12 @@ function ExamRoom({ webcamStream, requestWebcamStream }: Props) {
       requestWebcamStream()
     }
   }, [webcamStream, requestWebcamStream])
+
+  useEffect(() => {
+    return () => {
+      stopWebcamStream()
+    }
+  }, [stopWebcamStream])
 
   useEffect(() => {
     setCandidates(candidates => {

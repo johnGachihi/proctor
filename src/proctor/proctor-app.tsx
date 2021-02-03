@@ -5,12 +5,15 @@ import ExamRoom from "./screens/exam-room";
 import ProctorHome from "./screens/home";
 
 function ProctorApp() {
-  const { webcamStream, requestWebcamStream } = useWebcam()
+  const { webcamStream, requestWebcamStream, stopWebcamStream } = useWebcam()
 
   return (
     <Switch>
       <Route path="/exam/:code">
-        <ExamRoom webcamStream={ webcamStream! } requestWebcamStream={requestWebcamStream} />
+        <ExamRoom
+          webcamStream={ webcamStream! }
+          requestWebcamStream={requestWebcamStream}
+          stopWebcamStream={stopWebcamStream} />
       </Route>
       <Route path="/">
         <ProctorHome requestWebcamStream={requestWebcamStream} />

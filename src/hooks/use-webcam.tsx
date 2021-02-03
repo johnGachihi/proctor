@@ -1,11 +1,11 @@
-import { useState } from "react"
+import { useCallback, useState } from "react"
 import useAsync from "../utils/use-async"
 
 function useWebcam() {
   const [webcamStream, setWebcamStream] = useState<MediaStream>()
   const { run, isLoading: isWebcamAccessPending } = useAsync<MediaStream>()
 
-  const requestWebcamStream = async () => {
+  const requestWebcamStream = useCallback(async () => {
     try {
       const stream = await run(navigator.mediaDevices.getUserMedia({ video: true }))
       setWebcamStream(stream)
@@ -16,9 +16,23 @@ function useWebcam() {
         throw Error('Please grant webcam permissions on your browser')
       }
     }
-  }
+  }, [run])
 
-  return { webcamStream, requestWebcamStream, isWebcamAccessPending }
+  const stopWebcamStream = useCallback(() => {
+    setWebcamStream(webcamStream => {
+      webcamStream?.getTracks().forEach(track => {
+        track.stop()
+      })
+      return undefined
+    })
+  }, [])
+
+  return {
+    webcamStream,
+    requestWebcamStream,
+    isWebcamAccessPending,
+    stopWebcamStream
+  }
 }
 
 export default useWebcam
