@@ -2,6 +2,8 @@ import { Channel, PresenceChannel } from "laravel-echo/dist/channel";
 import { useCallback, useEffect, useState } from "react";
 import EchoClient from '../network/echo-client'
 
+type EchoCallback<T> = (data: EchoEventData<T>) => void
+type EchoEventData<T> = {id: number, info: T}
 
 function useEchoPresence(channelName: string) {
   const [subscribers, setSubscribers] = useState<any[]>([])
@@ -27,25 +29,25 @@ function useEchoPresence(channelName: string) {
 
   const { listen, stopListening, channel } = useEcho(connect, leave)
 
-  const onJoining = useCallback((callback: (user: User) => void) => {
+  const onJoining = useCallback((callback: EchoCallback<User>) => {
     if (channel) {
       channel.subscription.bind('pusher:member_added', callback)
     }
   }, [channel])
 
-  const onJoiningStop = useCallback((callback: Function) => {
+  const onJoiningStop = useCallback((callback: EchoCallback<User>) => {
     if (channel) {
       channel.subscription.unbind('pusher:member_added', callback)
     }
   }, [channel])
 
-  const onLeaving = useCallback((callback: (user: User) => void) => {
+  const onLeaving = useCallback((callback: EchoCallback<User>) => {
     if (channel) {
       channel.subscription.bind('pusher:member_removed', callback)
     }
   }, [channel])
 
-  const onLeavingStop = useCallback((callback: Function) => {
+  const onLeavingStop = useCallback((callback: EchoCallback<User>) => {
     if (channel) {
       channel.subscription.unbind('pusher:member_removed', callback)
     }
@@ -98,4 +100,10 @@ function useEcho(connect: () => Channel | PresenceChannel, leave: () => void) {
   return { listen, stopListening, channel }
 }
 
-export { useEchoPresence, useEchoPrivate };
+function createEchoCallback<T>(callback: (data: T) => void) {
+  return (member: {id: number, info: T}) => {
+    callback(member.info)
+  }
+}
+
+export { useEchoPresence, useEchoPrivate, createEchoCallback };

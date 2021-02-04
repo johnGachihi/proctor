@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import client from '../network/client'
 import * as webrtc from '../utils/webrtc'
-import { useEchoPresence } from './use-echo'
+import { createEchoCallback, useEchoPresence } from './use-echo'
 
 
 const offerOptions: RTCOfferOptions = {
@@ -176,11 +176,11 @@ function usePeerConnection(
 
 
   useEffect(() => {
-    const callback = (peer: User) => {
+    const callback = createEchoCallback((peer: User) => {
       if (user.role !== peer.role) {
         initiateConnection(peer)
       }
-    }
+    })
     onJoining(callback)
 
     return () => {
@@ -189,9 +189,10 @@ function usePeerConnection(
   }, [initiateConnection, onJoining, onJoiningStop, user.role])
 
   useEffect(() => {
-    const callback = (peer: any) => {
+    const callback = createEchoCallback((peer: User) => {
+      console.log(`usePeerConnection:`, peer)
       destroyConnection(peer.id)
-    }
+    })
     onLeaving(callback)
 
     return () => {
