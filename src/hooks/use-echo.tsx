@@ -47,7 +47,7 @@ function useEchoPresence(channelName: string) {
 
   const onLeavingStop = useCallback((callback: Function) => {
     if (channel) {
-      channel.subscription.unbind('pusher:member_added', callback)
+      channel.subscription.unbind('pusher:member_removed', callback)
     }
   }, [channel])
 
