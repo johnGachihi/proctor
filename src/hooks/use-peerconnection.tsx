@@ -104,7 +104,7 @@ function usePeerConnection(
     setPeerConnections(peerConnections =>
       peerConnections.map(pc => ({
         ...pc,
-        mediaStream: pc.id === peerId ? remoteStream : undefined
+        mediaStream: pc.id === peerId ? remoteStream : pc.mediaStream
       }))
     )
   }, [])
