@@ -7,6 +7,14 @@ type PeerConnection = {
   dataChannel?: RTCDataChannel;
 };
 
+type Candidate = {
+  id: number
+  mediaStream?: MediaStream
+  dataChannel?: RTCDataChannel
+  proctoringState: 'Possibly cheating' | 'OK',
+  cheatingCount: number
+}
+
 type User = {
   id: number;
   name: string;

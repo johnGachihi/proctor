@@ -1,9 +1,11 @@
 /** @jsx jsx */
 import { jsx } from "@emotion/core";
+import styled from '@emotion/styled'
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "../../contexts/auth-context";
 import { usePeerConnection } from "../../hooks/use-peerconnection";
+import SurveillanceScreen from "../components/surveillance-screen";
 
 type Props = React.PropsWithChildren<{
   webcamStream: MediaStream
@@ -11,19 +13,12 @@ type Props = React.PropsWithChildren<{
   stopWebcamStream: () => void
 }>
 
-type Candidate = {
-  id: number
-  mediaStream?: MediaStream
-  proctoringState: 'Possibly cheating' | 'OK'
-  dataChannel?: RTCDataChannel
-}
-
 function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props) {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   //@ts-ignore
   const { code } = useParams()
   
-  const [candidates, setCandidates] = useState<Candidate[]>()
+  const [candidates, setCandidates] = useState<Candidate[]>([])
 
   const onProctoringMessage = useCallback((event: MessageEvent) => {
     console.log(event)
@@ -53,6 +48,11 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
     console.log('ExamRoom: Candidates', candidates)
   }, [candidates])
 
+  // TO BE REMOVED
+  useEffect(() => {
+    console.log('ExamRoom: peerConnections', peerConnections)
+  }, [peerConnections])
+
   useEffect(() => {
     if (! webcamStream) {
       requestWebcamStream()
@@ -71,36 +71,32 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
         const candidate = candidates?.find(c => c.id === pc.id)
         return candidate 
           ? {...candidate, ...pc}
-          : {...pc, proctoringState: 'OK'}
+          : {...pc, proctoringState: 'OK', cheatingCount: 0}
       })
     })
   }, [peerConnections])
 
   return (
-    <div>
-      Invigilate
-      <button onClick={logout}>Logout</button>
-      {candidates?.map(candidate => {
-        if (candidate.mediaStream) {
-          return (
-            <div>
-              <video 
-                autoPlay
-                ref={videoEl => {
-                  if (videoEl)
-                    videoEl.srcObject = candidate!.mediaStream!
-                }}
-                css={{width: '250px', height: 'auto'}}/>
-                <span>{candidate.proctoringState}</span>
-            </div>
-          )
-        } else {
-          return null
-        }
-      })}
-    </div>
+    <InvigilatorExamRoom>
+      <StyledSurveillanceScreen candidates={candidates} />
+    </InvigilatorExamRoom>
   );
 }
+
+const InvigilatorExamRoom = styled.div`
+  height: 100vh;
+  display: grid;
+  grid-template-columns: [start] 80% [mid] 20% [end];
+  grid-template-rows: [top] auto [bottom];
+`
+
+const StyledSurveillanceScreen = styled(SurveillanceScreen)`
+  grid-column-start: start;
+  grid-column-end: mid;
+  grid-row-start: top;
+  grid-row-end: bottom;
+  margin: 10px;
+`
 
 
 export default ExamRoom;

@@ -63,6 +63,7 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
       console.log('ExamRoom: No pending connections')
     }
     console.log('ExamRoom:', peerConnections)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingConnections])
 
   useEffect(() => {
