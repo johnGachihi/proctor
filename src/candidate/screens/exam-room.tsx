@@ -1,9 +1,13 @@
-import React, { PropsWithChildren, useEffect, useMemo, useRef } from 'react'
+/** @jsx jsx */
+import { jsx } from '@emotion/core'
+import { PropsWithChildren, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../../contexts/auth-context'
 import { usePeerConnection } from '../../hooks/use-peerconnection'
 import useProctorModel from '../../hooks/use-ml-model'
 import { FullPageErrorFallback, FullPageMessage, FullPageSpinner } from '../../components/lib'
+import { Body1 } from '@material/react-typography'
+import { Button } from '@material/react-button'
 
 
 type Props = PropsWithChildren<{
@@ -13,16 +17,19 @@ type Props = PropsWithChildren<{
 }>
 
 function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props) {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   //@ts-ignore
   const { code } = useParams()
   const videoEl = useRef<HTMLVideoElement>(null)
+
+  const [isCheating, setIsCheating] = useState<boolean>(false)
 
   const {
     peerConnections,
     // sendProctoringMessage,
     someConnectionsEstablished,
-    membersInExam
+    membersInExam,
+    pendingConnections,
   } = usePeerConnection(code, webcamStream! /*Look into this*/, user)
 
   const {
@@ -40,13 +47,23 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
 
   // TO BE REMOVED
   useEffect(() => {
-    console.log(`someConnectionsEstablished: ${someConnectionsEstablished}`)
+    console.log(`ExamRoom: someConnectionsEstablished: ${someConnectionsEstablished}`)
   }, [someConnectionsEstablished])
 
   // TO BE REMOVED
   useEffect(() => {
     console.log(peerConnections)
   }, [peerConnections])
+
+  // TO BE REMOVED
+  useEffect(() => {
+    if (pendingConnections.length > 0) {
+      console.log('ExamRoom: Connecting to:', pendingConnections)
+    } else {
+      console.log('ExamRoom: No pending connections')
+    }
+    console.log('ExamRoom:', peerConnections)
+  }, [pendingConnections])
 
   useEffect(() => {
     if (! webcamStream) {
@@ -64,20 +81,38 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
     return someConnectionsEstablished && isModelLoaded
   }, [isModelLoaded, someConnectionsEstablished])
 
+  // TO BE REMOVED
+  useEffect(() => {
+    console.log('ExamRoom: prepared', prepared)
+  }, [prepared])
+
   useEffect(() => {
     if (prepared && videoEl.current && webcamStream) {
+      console.log('ExamRoom: showing videoStream', prepared)
       videoEl.current!.srcObject = webcamStream
     }
   }, [webcamStream, prepared])
 
+  const isConnectionsPending = useMemo(() => {
+    return pendingConnections.length > 0
+  }, [pendingConnections])
+
   useEffect(() => {
+    const onPredict = (result: any) => {
+      // console.log(result[0])
+      setIsCheating(result[0] < 0.5)
+    }
     if (prepared && videoEl.current) {
       videoEl.current.onloadeddata = () => {
-        initiateProctoring(videoEl.current!!, console.log)
+        if (isConnectionsPending) {
+          initiateProctoring(videoEl.current!!, onPredict, 'slow')
+        } else {
+          initiateProctoring(videoEl.current!!, onPredict)
+        }
       }
     }
     return terminateProctoring
-  }, [initiateProctoring, terminateProctoring, prepared])
+  }, [initiateProctoring, terminateProctoring, prepared, isConnectionsPending])
 
   const presentProctors = useMemo(() => {
     return membersInExam.filter(member => member.role === 'proctor')
@@ -96,14 +131,39 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
   }
 
   return (
-    <div>
-      <span>Exam Room</span>
-      <button onClick={logout}>Logout</button>
+    <div
+      css={{
+        height: '100vh',
+        display: 'flex',
+        position: 'relative',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <div
+        css={{
+          width: 'calc(100vw - 40px)',
+          position: 'absolute',
+          top: 0,
+          padding: '10px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: isCheating ? 'red' : '',
+        }}
+      >
+        <Body1 css={{ margin: 0 }}>Exam in Session</Body1>
+        <Button outlined>Leave Exam</Button>
+      </div>
       <video
         autoPlay
         ref={videoEl}
-        width="300"
-        height="300"
+        width="350"
+        css={{
+          alignSelf: 'center',
+          borderRadius: '10px'
+        }}
       ></video>
     </div>
   )
