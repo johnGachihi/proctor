@@ -16,7 +16,9 @@ function useProctorModel() {
 
   const initiateProctoring = useCallback(async (
     videoEl: HTMLVideoElement,
-    onPrediction?: (prediction: any) => void
+    onPrediction?: (prediction: any) => void,
+    rate: 'fast' | 'slow' = 'fast',
+    slowRate: number = 200
   ) => {
     if (isModelLoaded) {
       shouldRunRef.current = true
@@ -32,7 +34,11 @@ function useProctorModel() {
           onPrediction(result)
         }
 
-        await tf.nextFrame()
+        if (rate === 'slow') {
+          await wait(slowRate)
+        } else {
+          await tf.nextFrame()
+        }
       }
     }
   }, [isModelLoaded, model])
@@ -50,6 +56,14 @@ function useProctorModel() {
     initiateProctoring,
     terminateProctoring
   }
+}
+
+async function wait(milliseconds: number) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(null)
+    }, milliseconds)
+  })
 }
 
 export default useProctorModel
