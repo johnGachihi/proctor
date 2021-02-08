@@ -6,6 +6,7 @@
     "@emotion/core": "^10.0.35",
     "@emotion/styled": "^10.0.27",
     "@material/react-button": "^0.15.0",
+    "@material/react-icon-button": "^0.15.0",
     "@material/react-material-icon": "^0.15.0",
     "@material/react-snackbar": "^0.15.0",
     "@material/react-text-field": "^0.15.0",

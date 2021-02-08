@@ -1,8 +1,9 @@
 /** @jsx jsx */
 import { jsx, css } from "@emotion/core";
 import styled from "@emotion/styled";
+import MaterialIcon from "@material/react-material-icon";
 import { Body2 } from "@material/react-typography";
-import { PropsWithChildren, useRef } from "react";
+import { PropsWithChildren, useCallback, useRef } from "react";
 import CandidateVideoLoader from "./candidate-video-loader";
 
 type CandidateVideoProps = PropsWithChildren<{
@@ -12,13 +13,18 @@ type CandidateVideoProps = PropsWithChildren<{
 function CandidateVideo({ candidate }: CandidateVideoProps) {
   const overlayElRef = useRef<HTMLDivElement>(null)
 
+  const setupVideo = useCallback((videoEl: HTMLVideoElement) => {
+    if (videoEl && candidate.mediaStream) {
+      videoEl.srcObject = candidate.mediaStream
+    }
+  }, [candidate.mediaStream])
+
   function onMouseEnter() {
     if (overlayElRef && overlayElRef.current) {
       overlayElRef.current.style.visibility = 'visible'
       overlayElRef.current.style.opacity = '1'
     }
   }
-
   function onMouseLeave() {
     if (overlayElRef && overlayElRef.current) {
       overlayElRef.current.style.visibility = 'hidden'
@@ -28,33 +34,44 @@ function CandidateVideo({ candidate }: CandidateVideoProps) {
 
   return (
     <div>
-      <div
-        css={{ position: 'relative' }}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-      >
-        <Video
-          autoPlay
-          ref={videoEl => {
-            if (videoEl)
-              videoEl.srcObject = candidate.mediaStream!
-          }}
-        />
+      <div css={{
+        padding: '10px',
+        borderRadius: '10px',
+        background: candidate.proctoringState === 'possibly-cheating' ? 'red' : 'inherit'
+      }}>
+        <div
+          css={{ position: 'relative' }}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+        >
+          <Video autoPlay ref={setupVideo} />
 
-        <VideoOverlay ref={overlayElRef}>
-          <div css={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            padding: '10px'
-          }}>
-            <Body2 css={overlayTextStyling}>{ candidate.user.name }</Body2>
-            <Body2 css={overlayTextStyling}>Cheat count: { candidate.cheatingCount }</Body2>
-          </div>
-        </VideoOverlay>
+          <VideoOverlay ref={overlayElRef}>
+            <div css={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              padding: '10px'
+            }}>
+              <Body2 css={overlayTextStyling}>{ candidate.user.name }</Body2>
+              <Body2 css={overlayTextStyling}>Cheat count: { candidate.cheatingCount }</Body2>
+            </div>
+          </VideoOverlay>
 
-        {candidate.connectionState !== 'connected' &&
-          <StyledCandidateVideoLoader candidateName={candidate.user.name} />}
+          {candidate.connectionState !== 'connected' &&
+            <StyledCandidateVideoLoader candidateName={candidate.user.name} />}
+
+          {candidate.proctoringState === 'possibly-cheating' &&
+            <MaterialIcon
+              icon='warning_amber'
+              css={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                color: 'red',
+                margin: '15px'
+              }} />}
         </div>
+      </div>
     </div>
   )
 }

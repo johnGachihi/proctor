@@ -8,12 +8,14 @@ type PeerConnection = {
   dataChannel?: RTCDataChannel;
 };
 
+type ProctoringState = 'possibly-cheating' | 'ok'
+
 type Candidate = {
   id: number
   user: User;
   mediaStream?: MediaStream
   dataChannel?: RTCDataChannel
-  proctoringState: 'Possibly cheating' | 'OK'
+  proctoringState: ProctoringState
   cheatingCount: number
   connectionState: string
 }
@@ -28,3 +30,5 @@ type Message = {
   senderId: number;
   message: string;
 }
+
+declare module '*.wav'
