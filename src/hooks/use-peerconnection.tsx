@@ -149,7 +149,7 @@ function usePeerConnection(
 
     setPeerConnections(peerConnections => [
       ...peerConnections,
-      {id: peer.id, peerConnection, dataChannel}
+      {id: peer.id, user: peer, peerConnection, dataChannel}
     ])
 
     sendOffer(offer, peer.id, examCode)
@@ -228,7 +228,15 @@ function usePeerConnection(
     listen("PeerConnectionOffer", async (offer: any) => {
       if (offer.recipientId === user.id) {
         const peerConnection = new RTCPeerConnection(webrtc.configuration);
-        const connection: PeerConnection = { id: offer.senderId, peerConnection }
+
+        // TODO: Could this be made better?
+        //       Maybe have the server send the sender's
+        //       User details in the offer message 
+        const peer: User = membersInExam.find(member => {
+          console.log('usePeerConnections: PeerConnectionOffer', member)
+          return member.id === offer.senderId
+        })
+        const connection: PeerConnection = { id: offer.senderId, user: peer, peerConnection }
 
         for (const track of mediaStream.getTracks()) {
           peerConnection.addTrack(track, mediaStream)
@@ -265,16 +273,7 @@ function usePeerConnection(
       }
     })
     return () => stopListening('PeerConnectionOffer')
-  }, [
-    examCode,
-    handleRemoteTrackReceived,
-    listen,
-    mediaStream,
-    onProctoringMessageCallback,
-    setUpPeerConnectionListeners,
-    stopListening,
-    user.id,
-  ])
+  }, [examCode, handleRemoteTrackReceived, listen, mediaStream, membersInExam, onProctoringMessageCallback, setUpPeerConnectionListeners, stopListening, user.id])
 
   const pendingConnections = useMemo(() => {
     return peerConnections.filter(pc =>

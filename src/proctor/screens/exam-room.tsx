@@ -70,8 +70,13 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
       return peerConnections.map(pc => {
         const candidate = candidates?.find(c => c.id === pc.id)
         return candidate 
-          ? {...candidate, ...pc}
-          : {...pc, proctoringState: 'OK', cheatingCount: 0}
+          ? {...candidate, ...pc, connectionState: pc.peerConnection.connectionState}
+          : {
+            ...pc,
+            proctoringState: 'OK',
+            cheatingCount: 0,
+            connectionState: pc.peerConnection.connectionState
+          }
       })
     })
   }, [peerConnections])

@@ -15,7 +15,7 @@ function SurveillanceScreen({ candidates, className }: Props) {
       .filter(candidate => candidate.mediaStream !== undefined)
       .sort((a, b) => a.cheatingCount - b.cheatingCount)
       .map(candidate =>
-        <CandidateVideo stream={ candidate.mediaStream! } isCheating= { false }/>)
+        <CandidateVideo candidate={ candidate } />)
   }, [candidates])
 
   return (
