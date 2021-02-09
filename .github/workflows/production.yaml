@@ -10,7 +10,7 @@ on:
       - 'LICENCE'
 
 env:
-  REACT_APP_API_URL: http://proctor.johngachihi.com/api/src/public
+  REACT_APP_API_URL: https://proctor.johngachihi.com/api/src/public
   REACT_APP_APP_NAME: Proctor
   REACT_APP_PUSHER_APP_KEY: ${{ secrets.PUSHER_APP_KEY }}
   REACT_APP_PUSHER_APP_CLUSTER: ap2
