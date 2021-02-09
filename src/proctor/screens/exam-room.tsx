@@ -11,17 +11,23 @@ import dingSound from '../../assets/beep.wav'
 import MaterialIcon from "@material/react-material-icon";
 
 function usePlayAudio() {
-  const dingAudio = useMemo(() => new Audio(dingSound), []);
+  const dingAudio = useMemo(() => new Audio(dingSound), [])
+  const [isMuted, setIsMuted] = useState(false)
 
-  const play = useCallback(() => {
-    if (dingAudio.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA) {
+  const playAudio = useCallback(() => {
+    if (!isMuted) {
+      if (dingAudio.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA) {
       dingAudio.play();
-    } else {
-      dingAudio.addEventListener('canplaythrough', dingAudio.play);
+      } else {
+        dingAudio.addEventListener('canplaythrough', dingAudio.play);
+      }
     }
-  }, [dingAudio]);
+  }, [dingAudio, isMuted]);
 
-  return play
+  const mute = useCallback(() => setIsMuted(true), [])
+  const unMute = useCallback(() => setIsMuted(false), [])
+
+  return { playAudio, mute, unMute }
 }
 
 type Props = React.PropsWithChildren<{
@@ -36,7 +42,7 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
   const { code } = useParams()
 
   const [isNotificationMuted, setIsNotificationMuted] = useState(false)
-  const playDing = usePlayAudio()
+  const { playAudio, mute, unMute } = usePlayAudio()
   
   const [candidates, setCandidates] = useState<Candidate[]>([])
 
@@ -44,8 +50,8 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
     console.log(event)
     const message: Message = JSON.parse(event.data)
 
-    if (message.message === 'possibly-cheating' && !isNotificationMuted) {
-      playDing()
+    if (message.message === 'possibly-cheating') {
+      playAudio()
     }
 
     setCandidates(candidates => {
@@ -65,7 +71,7 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
         }
       })
     })
-  }, [isNotificationMuted, playDing])
+  }, [playAudio])
 
   const { peerConnections } = usePeerConnection(
     code,
@@ -111,6 +117,14 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
       })
     })
   }, [peerConnections])
+
+  useEffect(() => {
+    if (isNotificationMuted) {
+      mute()
+    } else {
+      unMute()
+    }
+  }, [isNotificationMuted, mute, unMute])
 
   return (
     <InvigilatorExamRoom>
