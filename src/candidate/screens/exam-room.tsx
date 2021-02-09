@@ -26,7 +26,7 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
 
   const {
     peerConnections,
-    // sendProctoringMessage,
+    sendProctoringMessage,
     someConnectionsEstablished,
     membersInExam,
     pendingConnections,
@@ -100,7 +100,6 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
 
   useEffect(() => {
     const onPredict = (result: any) => {
-      // console.log(result[0])
       setIsCheating(result[0] < 0.5)
     }
     if (prepared && videoEl.current) {
@@ -114,6 +113,32 @@ function ExamRoom({ webcamStream, requestWebcamStream, stopWebcamStream }: Props
     }
     return terminateProctoring
   }, [initiateProctoring, terminateProctoring, prepared, isConnectionsPending])
+
+  useEffect(() => {
+    if (isCheating) {
+      sendProctoringMessage('possibly-cheating')
+    } else {
+      sendProctoringMessage('ok')
+    }
+  }, [isCheating, sendProctoringMessage])
+
+  // To simulate sending cheating detector messages
+
+  // const isCheatingRef = useRef(false)
+  // useEffect(() => {
+  //   const intervalId = setInterval(() => {
+  //     if (isCheatingRef.current) {
+  //       sendProctoringMessage('ok')
+  //     } else {
+  //       sendProctoringMessage('possibly-cheating')
+  //     }
+  //     isCheatingRef.current = !isCheatingRef.current
+  //   }, 2000)
+
+  //   return () => {
+  //     clearInterval(intervalId)
+  //   }
+  // }, [sendProctoringMessage])
 
   const presentProctors = useMemo(() => {
     return membersInExam.filter(member => member.role === 'proctor')
