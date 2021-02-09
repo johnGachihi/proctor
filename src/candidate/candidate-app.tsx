@@ -9,7 +9,7 @@ function CandidateApp() {
 
   return (
     <Switch>
-      <Route path="/exam/:code">
+      <Route exact path="/exam/:code">
         <ExamRoom
           webcamStream={webcamStream!}
           requestWebcamStream={ requestWebcamStream }
