@@ -9,7 +9,8 @@ async function requestCsrf() {
 
 async function login(credentials: LoginCredentials){
   await requestCsrf()
-  await client.post(`${apiUrl}/login`, credentials)
+  await client.post(`${apiUrl}/login`, credentials, {
+    headers: { accept: 'application/json' }})
   return await client.get('me')
 }
 
