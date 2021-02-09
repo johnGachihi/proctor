@@ -15,6 +15,8 @@ function useWebcam() {
         throw Error('Please turn on your webcam')
       } else if (error.name === "NotAllowedError") {
         throw Error('Please grant webcam permissions on your browser')
+      } else {
+        throw error
       }
     }
   }, [run])
