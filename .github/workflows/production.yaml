@@ -1,0 +1,74 @@
+name: Production
+
+on:
+  push:
+    branches: ci # Change to main
+    path-ignore:
+      - '.gitignore'
+      - 'README.md'
+      - 'tsconfig.json'
+      - 'LICENCE'
+
+env:
+  REACT_APP_API_URL: http://proctor.johngachihi.com/api/src/public
+  REACT_APP_APP_NAME: Proctor
+  REACT_APP_PUSHER_APP_KEY: ${{ secrets.PUSHER_APP_KEY }}
+  REACT_APP_PUSHER_APP_CLUSTER: ap2
+  REACT_APP_CUSTOM_MODEL: http://johngachihi.com/ml-models/pruned-model-js
+  SASS_PATH: ./node_modules
+
+jobs:
+  build-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: npm i
+
+      - name: Build project
+        run: npm run build
+
+      - name: Compress build
+        run: zip -r build.zip build -x '*node_modules*' .env
+
+      - name: Transfer compressed build to server
+        uses: appleboy/scp-action@master
+        with:
+          source: build.zip
+          target: proctor.johngachihi.com/proctor/
+          host: johngachihi.com
+          username: ${{ secrets.HOST_USERNAME }}
+          port: ${{ secrets.HOST_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+
+      - name: Extract compressed build in server
+        uses: appleboy/ssh-action@master
+        with:
+          host: johngachihi.com
+          username: ${{ secrets.HOST_USERNAME }}
+          port: ${{ secrets.HOST_PORT }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          script: |
+            cd proctor.johngachihi.com/proctor
+
+            # Compress previously running source code
+            if [ -d "src" ]; then
+              zip -rmT src-$(date +"%s").zip src
+            fi
+
+            # Delete oldest backup if there are more than four
+            if ls src-*.zip; then
+              if [ $(ls src-*.zip | wc -l) -gt 4 ]; then
+                rm $(ls src-*.zip | head -1);
+              fi
+            fi
+
+            # unzip new source code then clean up
+            unzip -o build.zip -d src
+            rm build.zip
+            cd src
+            mv build/* build/.[!.]* .
+            rm -r build
