@@ -8,6 +8,7 @@ function useWebcam() {
   const requestWebcamStream = useCallback(async () => {
     try {
       const stream = await run(navigator.mediaDevices.getUserMedia({ video: true }))
+      console.log('Stream requested')
       setWebcamStream(stream)
     } catch (error) {
       if (error.name === "NotFoundError") {
